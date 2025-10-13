@@ -13,7 +13,7 @@ export default function SignInPage() {
           <h1 className={`text-3xl font-bold mb-2 ${theme === 'cyber' ? 'gradient-cyber bg-clip-text text-transparent' : ''}`}>
             Welcome to CampusHub
           </h1>
-          <p className="text-muted-foreground">Sign in to access your campus services</p>
+          <p className="text-muted-foreground">Sign in to access Campus Hub services</p>
         </div>
         <SignIn 
           appearance={{

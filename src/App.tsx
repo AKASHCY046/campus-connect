@@ -13,6 +13,9 @@ import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import Library from "./pages/Library";
 import Canteen from "./pages/Canteen";
+import Academic from "./pages/Academic";
+import Campus from "./pages/Campus";
+import Wallet from "./pages/Wallet";
 import NotFound from "./pages/NotFound";
 import { config } from "@/lib/mongodb";
 
@@ -43,6 +46,9 @@ const App = () => (
               <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
               <Route path="/library" element={<ProtectedRoute><Layout><Library /></Layout></ProtectedRoute>} />
               <Route path="/canteen" element={<ProtectedRoute><Layout><Canteen /></Layout></ProtectedRoute>} />
+              <Route path="/academic" element={<ProtectedRoute><Layout><Academic /></Layout></ProtectedRoute>} />
+              <Route path="/campus" element={<ProtectedRoute><Layout><Campus /></Layout></ProtectedRoute>} />
+              <Route path="/wallet" element={<ProtectedRoute><Layout><Wallet /></Layout></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
