@@ -16,6 +16,7 @@ import Canteen from "./pages/Canteen";
 import Academic from "./pages/Academic";
 import Campus from "./pages/Campus";
 import NotFound from "./pages/NotFound";
+import LibrarianDashboard from "./pages/LibrarianDashboard";
 import { config } from "@/lib/mongodb";
 
 // Use environment configuration
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/sign-in/*" element={<SignIn />} />
               <Route path="/sign-up/*" element={<SignUp />} />
               <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+              <Route path="/librarian" element={<ProtectedRoute><Layout><LibrarianDashboard /></Layout></ProtectedRoute>} />
               <Route path="/library" element={<ProtectedRoute><Layout><Library /></Layout></ProtectedRoute>} />
               <Route path="/canteen" element={<ProtectedRoute><Layout><Canteen /></Layout></ProtectedRoute>} />
               <Route path="/academic" element={<ProtectedRoute><Layout><Academic /></Layout></ProtectedRoute>} />

@@ -8,16 +8,25 @@ import {
   Calendar,
   Bell,
   TrendingUp,
-  Award,
-  Users
+  Award
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { EnvironmentStatus } from '@/components/EnvironmentStatus';
+import { useUser } from '@clerk/clerk-react'; // ✅ Import Clerk hook
 
 export default function Dashboard() {
   const { theme } = useTheme();
-  
+  const { user } = useUser(); // ✅ Get logged-in user from Clerk
+
+  // ✅ Derive username safely
+  const username =
+    user?.fullName ||
+    user?.firstName ||
+    user?.username ||
+    user?.primaryEmailAddress?.emailAddress?.split('@')[0] ||
+    'Student';
+
   const quickActions = [
     { 
       title: 'Library', 
@@ -61,9 +70,20 @@ export default function Dashboard() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-2">
-          Welcome back, <span className={theme === 'cyber' ? 'gradient-cyber bg-clip-text text-transparent' : 'text-primary'}>Student</span>
+          Welcome back,{' '}
+          <span
+            className={
+              theme === 'cyber'
+                ? 'gradient-cyber bg-clip-text text-transparent'
+                : 'text-primary'
+            }
+          >
+            {username}
+          </span>
         </h1>
-        <p className="text-muted-foreground">Here's your campus activity overview</p>
+        <p className="text-muted-foreground">
+          Here's your campus activity overview
+        </p>
       </div>
       
       {/* Stats Grid */}
@@ -103,7 +123,7 @@ export default function Dashboard() {
         </div>
       </div>
       
-      {/* Environment Status (Development Only) */}
+      {/* Environment Status */}
       {import.meta.env.DEV && (
         <div className="mb-6">
           <EnvironmentStatus />
