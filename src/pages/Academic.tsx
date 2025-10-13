@@ -33,7 +33,8 @@ import {
   Play,
   Pause,
   Bookmark,
-  Send
+  Send,
+  Bell
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Link } from 'react-router-dom';
@@ -48,6 +49,7 @@ export default function Academic() {
   const [downloadedMaterials, setDownloadedMaterials] = useState<number[]>([]);
   const [joinedGroups, setJoinedGroups] = useState<number[]>([]);
   const [submittedAssignments, setSubmittedAssignments] = useState<number[]>([]);
+  const [reminders, setReminders] = useState<number[]>([]);
   const [newMaterial, setNewMaterial] = useState({
     title: '',
     description: '',
@@ -201,11 +203,62 @@ export default function Academic() {
   
   const handleCreateAssignment = () => {
     if (newAssignment.title && newAssignment.subject && newAssignment.dueDate && newAssignment.points) {
+      // Set reminder for assignment due date
+      const dueDate = new Date(newAssignment.dueDate);
+      const now = new Date();
+      const timeDiff = dueDate.getTime() - now.getTime();
+      
+      if (timeDiff > 0) {
+        // Set reminder 1 day before due date
+        const reminderTime = dueDate.getTime() - (24 * 60 * 60 * 1000);
+        const timeUntilReminder = reminderTime - now.getTime();
+        
+        if (timeUntilReminder > 0) {
+          setTimeout(() => {
+            toast.success(`Reminder: ${newAssignment.title} is due tomorrow!`);
+          }, timeUntilReminder);
+        }
+      }
+      
       toast.success('Assignment created successfully!');
       setNewAssignment({ title: '', description: '', subject: '', dueDate: '', points: '' });
       setShowAssignmentDialog(false);
     } else {
       toast.error('Please fill in all required fields');
+    }
+  };
+  
+  const handleSetReminder = (itemId: number, itemType: 'assignment' | 'exam', dueDate: string) => {
+    if (reminders.includes(itemId)) {
+      setReminders(prev => prev.filter(id => id !== itemId));
+      toast.success('Reminder removed');
+    } else {
+      setReminders(prev => [...prev, itemId]);
+      
+      // Set browser notification permission
+      if ('Notification' in window) {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            const dueDateObj = new Date(dueDate);
+            const now = new Date();
+            const timeDiff = dueDateObj.getTime() - now.getTime();
+            
+            if (timeDiff > 0) {
+              // Set reminder 1 day before
+              const reminderTime = dueDateObj.getTime() - (24 * 60 * 60 * 1000);
+              const timeUntilReminder = reminderTime - now.getTime();
+              
+              if (timeUntilReminder > 0) {
+                setTimeout(() => {
+                  new Notification(`Reminder: ${itemType === 'assignment' ? 'Assignment' : 'Exam'} due tomorrow!`);
+                }, timeUntilReminder);
+              }
+            }
+          }
+        });
+      }
+      
+      toast.success('Reminder set successfully!');
     }
   };
   
@@ -220,6 +273,16 @@ export default function Academic() {
     group.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
     group.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  const generateCalendarUrl = (event: any) => {
+    const startDate = event.start.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const endDate = event.end.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const details = encodeURIComponent(event.description || '');
+    const location = encodeURIComponent(event.location || '');
+    const title = encodeURIComponent(event.title);
+    
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&location=${location}`;
+  };
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -573,6 +636,15 @@ export default function Academic() {
                         'Continue'
                       )}
                     </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleSetReminder(idx, 'assignment', assignment.dueDate)}
+                      className={reminders.includes(idx) ? 'bg-primary/10 text-primary' : ''}
+                    >
+                      <Bell className="h-3 w-3 mr-1" />
+                      {reminders.includes(idx) ? 'Reminder Set' : 'Set Reminder'}
+                    </Button>
                   </div>
                   
                   {assignment.status === 'in_progress' && (
@@ -744,17 +816,49 @@ export default function Academic() {
                 </div>
                 
                 <div className="mt-4 flex gap-2">
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => toast.success('Opening study materials...')}
+                  >
                     <BookOpen className="h-3 w-3 mr-1" />
                     Study Materials
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => toast.success('Finding study groups...')}
+                  >
                     <Users className="h-3 w-3 mr-1" />
                     Study Group
                   </Button>
-                  <Button size="sm">
+                  <Button 
+                    size="sm"
+                    onClick={() => {
+                      const examDate = new Date(`${exam.date}T${exam.time}`);
+                      const calendarEvent = {
+                        title: `${exam.subject} Exam`,
+                        start: examDate,
+                        end: new Date(examDate.getTime() + parseInt(exam.duration) * 60 * 60 * 1000),
+                        location: 'Examination Hall',
+                        description: `Duration: ${exam.duration}`
+                      };
+                      const calendarUrl = generateCalendarUrl(calendarEvent);
+                      window.open(calendarUrl, '_blank');
+                      toast.success('Opening calendar...');
+                    }}
+                  >
                     <Calendar className="h-3 w-3 mr-1" />
                     Add to Calendar
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleSetReminder(idx, 'exam', exam.date)}
+                    className={reminders.includes(idx) ? 'bg-primary/10 text-primary' : ''}
+                  >
+                    <Bell className="h-3 w-3 mr-1" />
+                    {reminders.includes(idx) ? 'Reminder Set' : 'Set Reminder'}
                   </Button>
                 </div>
               </Card>

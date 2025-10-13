@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   UtensilsCrossed, 
   Clock, 
-  Wallet,
   ShoppingCart,
   CheckCircle2,
   Flame,
@@ -123,9 +122,9 @@ export default function Canteen() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Card className="p-6">
-          <Wallet className="h-8 w-8 text-green-500 mb-2" />
+          <UtensilsCrossed className="h-8 w-8 text-green-500 mb-2" />
           <p className="font-bold text-2xl">₹450</p>
-          <p className="text-sm text-muted-foreground">Wallet Balance</p>
+          <p className="text-sm text-muted-foreground">Canteen Balance</p>
         </Card>
         
         <Card className="p-6">

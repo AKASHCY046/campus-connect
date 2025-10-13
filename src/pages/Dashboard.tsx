@@ -5,7 +5,6 @@ import {
   UtensilsCrossed, 
   GraduationCap, 
   Building2, 
-  Wallet,
   Calendar,
   Bell,
   TrendingUp,
@@ -52,7 +51,7 @@ export default function Dashboard() {
   
   const stats = [
     { label: 'Books Issued', value: '3', icon: BookOpen },
-    { label: 'Canteen Balance', value: '₹450', icon: Wallet },
+    { label: 'Canteen Balance', value: '₹450', icon: UtensilsCrossed },
     { label: 'Upcoming Events', value: '5', icon: Calendar },
     { label: 'Reward Points', value: '1,250', icon: Award },
   ];

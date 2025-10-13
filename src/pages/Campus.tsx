@@ -234,19 +234,72 @@ export default function Campus() {
   
   const handleCreateEvent = () => {
     if (newEvent.title && newEvent.date && newEvent.time && newEvent.location) {
+      // Create calendar event
+      const eventDate = new Date(`${newEvent.date}T${newEvent.time}`);
+      const calendarEvent = {
+        title: newEvent.title,
+        start: eventDate,
+        end: new Date(eventDate.getTime() + 2 * 60 * 60 * 1000), // 2 hours duration
+        location: newEvent.location,
+        description: newEvent.description
+      };
+      
+      // Generate calendar URL
+      const calendarUrl = generateCalendarUrl(calendarEvent);
+      
       toast.success('Event created successfully!');
       setNewEvent({ title: '', description: '', date: '', time: '', location: '', type: 'general' });
       setShowCreateEvent(false);
+      
+      // Show calendar options
+      setTimeout(() => {
+        if (confirm('Would you like to add this event to your calendar?')) {
+          window.open(calendarUrl, '_blank');
+        }
+      }, 1000);
     } else {
       toast.error('Please fill in all required fields');
     }
   };
   
+  const generateCalendarUrl = (event: any) => {
+    const startDate = event.start.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const endDate = event.end.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const details = encodeURIComponent(event.description || '');
+    const location = encodeURIComponent(event.location || '');
+    const title = encodeURIComponent(event.title);
+    
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&location=${location}`;
+  };
+  
   const handleCreateClub = () => {
-    if (newClub.name && newClub.description) {
-      toast.success('Club created successfully!');
+    if (newClub.name && newClub.description && newClub.category) {
+      // Validate club name (no special characters)
+      const nameRegex = /^[a-zA-Z0-9\s]+$/;
+      if (!nameRegex.test(newClub.name)) {
+        toast.error('Club name can only contain letters, numbers, and spaces');
+        return;
+      }
+      
+      // Check if club name already exists
+      const existingClub = clubs.find(club => 
+        club.name.toLowerCase() === newClub.name.toLowerCase()
+      );
+      
+      if (existingClub) {
+        toast.error('A club with this name already exists');
+        return;
+      }
+      
+      toast.success('Club created successfully! You are now the president.');
       setNewClub({ name: '', description: '', category: 'general' });
       setShowCreateClub(false);
+      
+      // Add to joined clubs
+      setTimeout(() => {
+        setJoinedClubs(prev => [...prev, Date.now()]);
+        toast.success('You have been automatically added as the first member!');
+      }, 1000);
     } else {
       toast.error('Please fill in all required fields');
     }
@@ -463,7 +516,23 @@ export default function Campus() {
                     <Share2 className="h-3 w-3 mr-1" />
                     Share
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => {
+                      const eventDate = new Date(`${event.date}T${event.time.split(' - ')[0]}`);
+                      const calendarEvent = {
+                        title: event.title,
+                        start: eventDate,
+                        end: new Date(eventDate.getTime() + 2 * 60 * 60 * 1000),
+                        location: event.location,
+                        description: event.description
+                      };
+                      const calendarUrl = generateCalendarUrl(calendarEvent);
+                      window.open(calendarUrl, '_blank');
+                      toast.success('Opening calendar...');
+                    }}
+                  >
                     <Calendar className="h-3 w-3 mr-1" />
                     Add to Calendar
                   </Button>

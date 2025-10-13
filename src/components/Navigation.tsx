@@ -7,7 +7,6 @@ import {
   UtensilsCrossed, 
   GraduationCap, 
   Building2, 
-  Wallet, 
   Settings,
   Sparkles,
   Moon,
@@ -26,7 +25,6 @@ export const Navigation = () => {
     { path: '/canteen', label: 'Canteen', icon: UtensilsCrossed },
     { path: '/academic', label: 'Academic', icon: GraduationCap },
     { path: '/campus', label: 'Campus', icon: Building2 },
-    { path: '/wallet', label: 'Wallet', icon: Wallet },
   ];
   
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
