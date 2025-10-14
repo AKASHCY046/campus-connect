@@ -2,52 +2,119 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useTheme } from "@/contexts/ThemeContext";
-import React from "react";
+import { useBooks, useRequests, useLoans, useFines, useLibraryAnalytics } from "@/hooks/use-library-api";
+import { Book, BookRequest, Loan, Fine, CreateBookData } from "@/lib/library-api";
+import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
-
-// Placeholder data for demonstration
-const requests = [
-  { id: 1, student: "John Doe", book: "Clean Code", type: "Reservation", status: "pending" },
-  { id: 2, student: "Jane Smith", book: "Atomic Habits", type: "Renewal", status: "pending" },
-];
-const inventory = [
-  { isbn: "9780132350884", title: "Clean Code", author: "Robert C. Martin", total: 5, available: 2 },
-  { isbn: "9780735211292", title: "Atomic Habits", author: "James Clear", total: 3, available: 1 },
-];
-const loans = [
-  { id: 1, student: "John Doe", book: "Clean Code", due: "2025-10-20", overdue: false },
-  { id: 2, student: "Jane Smith", book: "Atomic Habits", due: "2025-10-10", overdue: true },
-];
-const fines = [
-  { id: 1, student: "Jane Smith", amount: 50, reason: "Overdue", paid: false },
-  { id: 2, student: "John Doe", amount: 20, reason: "Damaged Book", paid: true },
-];
+import { toast } from "sonner";
+import { Plus, Edit, Trash2, Loader2, Download, RefreshCw, CheckCircle, XCircle, BookOpen, Users, DollarSign, AlertTriangle } from "lucide-react";
 
 export default function LibrarianDashboard() {
   const { theme } = useTheme();
   const location = useLocation();
+  
+  // API hooks
+  const { books, loading: booksLoading, createBook, updateBook, deleteBook } = useBooks();
+  const { requests, loading: requestsLoading, approveRequest, denyRequest } = useRequests();
+  const { loans, loading: loansLoading, returnBook } = useLoans();
+  const { fines, loading: finesLoading, markFinePaid } = useFines();
+  const { analytics, loading: analyticsLoading } = useLibraryAnalytics();
+  
+  // State for add book dialog
+  const [isAddBookDialogOpen, setIsAddBookDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newBook, setNewBook] = useState<CreateBookData>({
+    isbn: '',
+    title: '',
+    author: '',
+    total: 1,
+    category: 'Programming',
+    publishedYear: new Date().getFullYear(),
+    cover: '',
+    description: ''
+  });
+  
   // Read tab from URL query param reactively
   const tab = React.useMemo(() => {
     const params = new URLSearchParams(location.search);
     return params.get('tab') || 'requests';
   }, [location.search]);
 
-  // Action handlers for header buttons
-  const handleApproveAll = () => {
-    alert("All requests approved (demo)");
+  // Action handlers
+  const handleAddBook = async () => {
+    try {
+      setIsSubmitting(true);
+      await createBook(newBook);
+      toast.success('Book added successfully!');
+      setIsAddBookDialogOpen(false);
+      setNewBook({
+        isbn: '',
+        title: '',
+        author: '',
+        total: 1,
+        category: 'Programming',
+        publishedYear: new Date().getFullYear(),
+        cover: '',
+        description: ''
+      });
+    } catch (error) {
+      toast.error('Failed to add book');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-  const handleAddRequest = () => {
-    alert("Add new request (demo)");
+
+  const handleApproveRequest = async (requestId: string) => {
+    try {
+      await approveRequest(requestId);
+      toast.success('Request approved');
+    } catch (error) {
+      toast.error('Failed to approve request');
+    }
   };
-  const handleAddBook = () => {
-    alert("Add new book (demo)");
+
+  const handleDenyRequest = async (requestId: string) => {
+    try {
+      await denyRequest(requestId);
+      toast.success('Request denied');
+    } catch (error) {
+      toast.error('Failed to deny request');
+    }
   };
-  const handleIssueLoan = () => {
-    alert("Issue new loan (demo)");
+
+  const handleReturnBook = async (loanId: string) => {
+    try {
+      await returnBook(loanId);
+      toast.success('Book returned successfully');
+    } catch (error) {
+      toast.error('Failed to return book');
+    }
   };
-  const handleAssessFine = () => {
-    alert("Assess fine (demo)");
+
+  const handleMarkFinePaid = async (fineId: string) => {
+    try {
+      await markFinePaid(fineId);
+      toast.success('Fine marked as paid');
+    } catch (error) {
+      toast.error('Failed to mark fine as paid');
+    }
+  };
+
+  const handleDeleteBook = async (bookId: string) => {
+    if (confirm('Are you sure you want to delete this book?')) {
+      try {
+        await deleteBook(bookId);
+        toast.success('Book deleted successfully');
+      } catch (error) {
+        toast.error('Failed to delete book');
+      }
+    }
   };
 
 
@@ -73,24 +140,72 @@ export default function LibrarianDashboard() {
       {tab === 'requests' && (
         <Card>
           <CardHeader>
-            <CardTitle>Pending Requests</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              Pending Requests
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => window.location.reload()}
+                  className="gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh
+                </Button>
+                <Badge variant="secondary">
+                  {requests.filter(req => req.status === 'pending').length} pending
+                </Badge>
+              </div>
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {requests.length === 0 && <div>No pending requests.</div>}
-              {requests.map((req) => (
-                <div key={req.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/10">
-                  <div>
-                    <span className="font-semibold">{req.student}</span> requests <span className="font-semibold">{req.type}</span> for <span className="font-semibold">{req.book}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="default">Approve</Button>
-                    <Button size="sm" variant="destructive">Deny</Button>
-                  </div>
+            {requestsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span className="ml-2">Loading requests...</span>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  {requests.filter(req => req.status === 'pending').length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No pending requests.
+                    </div>
+                  ) : (
+                    requests.filter(req => req.status === 'pending').map((req) => (
+                      <div key={req.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/10">
+                        <div>
+                          <span className="font-semibold">{req.studentName}</span> requests <span className="font-semibold">{req.type}</span> for <span className="font-semibold">{req.bookTitle}</span>
+                          <div className="text-sm text-muted-foreground">
+                            Requested: {new Date(req.requestedAt).toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="default"
+                            onClick={() => handleApproveRequest(req.id)}
+                            className="gap-1"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                            Approve
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={() => handleDenyRequest(req.id)}
+                            className="gap-1"
+                          >
+                            <XCircle className="h-4 w-4" />
+                            Deny
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-              ))}
-            </div>
-            <Button className="mt-4" variant="default" onClick={handleAddRequest}>Add New Request</Button>
+              </>
+            )}
           </CardContent>
         </Card>
       )}

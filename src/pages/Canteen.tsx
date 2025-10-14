@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,88 +14,26 @@ import {
   Timer,
   Plus,
   Minus,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useMenuItems, useUserOrders } from '@/hooks/use-canteen-api';
+import { MenuItem } from '@/lib/api';
 import { toast } from 'sonner';
 
 export default function Canteen() {
   const { theme } = useTheme();
-  const [cart, setCart] = useState<{[key: number]: {item: any, quantity: number}}>({});
+  const [cart, setCart] = useState<{[key: string]: {item: MenuItem, quantity: number}}>({});
   
-  const menuItems = [
-    { 
-      id: 1,
-      name: 'Masala Dosa', 
-      price: 60, 
-      category: 'breakfast',
-      prepTime: 15,
-      calories: 450,
-      veg: true,
-      popular: true,
-      image: 'https://images.unsplash.com/photo-1630383249896-424e482df921?w=400&h=300&fit=crop'
-    },
-    { 
-      id: 2,
-      name: 'Paneer Butter Masala', 
-      price: 120, 
-      category: 'lunch',
-      prepTime: 20,
-      calories: 580,
-      veg: true,
-      popular: true,
-      image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400&h=300&fit=crop'
-    },
-    { 
-      id: 3,
-      name: 'Chicken Biryani', 
-      price: 150, 
-      category: 'lunch',
-      prepTime: 25,
-      calories: 720,
-      veg: false,
-      popular: true,
-      image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400&h=300&fit=crop'
-    },
-    { 
-      id: 4,
-      name: 'Veg Sandwich', 
-      price: 40, 
-      category: 'snacks',
-      prepTime: 10,
-      calories: 320,
-      veg: true,
-      image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&h=300&fit=crop'
-    },
-    { 
-      id: 5,
-      name: 'Samosa (2 pcs)', 
-      price: 30, 
-      category: 'snacks',
-      prepTime: 5,
-      calories: 280,
-      veg: true,
-      popular: true,
-      image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&h=300&fit=crop'
-    },
-    { 
-      id: 6,
-      name: 'Cold Coffee', 
-      price: 50, 
-      category: 'beverages',
-      prepTime: 5,
-      calories: 180,
-      veg: true,
-      image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&h=300&fit=crop'
-    },
-  ];
+  // API hooks
+  const { menuItems, loading: menuLoading } = useMenuItems();
+  const { orders: userOrders, createOrder, loading: ordersLoading } = useUserOrders();
   
-  const activeOrders = [
-    { tokenNo: 42, items: ['Masala Dosa', 'Coffee'], status: 'preparing', time: '5 mins' },
-    { tokenNo: 41, items: ['Biryani', 'Raita'], status: 'ready', time: 'Ready' },
-  ];
+  // Filter available menu items
+  const availableMenuItems = menuItems.filter(item => item.available);
   
-  const addToCart = (item: any) => {
+  const addToCart = (item: MenuItem) => {
     setCart(prevCart => {
       const newCart = { ...prevCart };
       if (newCart[item.id]) {
@@ -115,7 +53,7 @@ export default function Canteen() {
     });
   };
 
-  const removeFromCart = (itemId: number) => {
+  const removeFromCart = (itemId: string) => {
     setCart(prevCart => {
       const newCart = { ...prevCart };
       if (newCart[itemId]) {
@@ -126,7 +64,7 @@ export default function Canteen() {
     });
   };
 
-  const updateQuantity = (itemId: number, newQuantity: number) => {
+  const updateQuantity = (itemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeFromCart(itemId);
       return;
@@ -144,14 +82,27 @@ export default function Canteen() {
     });
   };
   
-  const placeOrder = () => {
+  const placeOrder = async () => {
     const cartItems = Object.values(cart);
     if (cartItems.length === 0) {
       toast.error('Cart is empty');
       return;
     }
-    toast.success('Order placed! Token #43');
-    setCart({});
+    
+    try {
+      // Create orders for each cart item
+      for (const cartItem of cartItems) {
+        await createOrder({
+          itemId: cartItem.item.id,
+          qty: cartItem.quantity
+        });
+      }
+      
+      toast.success('Order placed successfully!');
+      setCart({});
+    } catch (error) {
+      toast.error('Failed to place order');
+    }
   };
   
   const total = Object.values(cart).reduce((sum, cartItem) => 
@@ -184,7 +135,7 @@ export default function Canteen() {
         
         <Card className="p-6">
           <Clock className="h-8 w-8 text-blue-500 mb-2" />
-          <p className="font-bold text-2xl">{activeOrders.length}</p>
+          <p className="font-bold text-2xl">{userOrders.filter(order => order.status === 'pending').length}</p>
           <p className="text-sm text-muted-foreground">Active Orders</p>
         </Card>
         
@@ -196,8 +147,8 @@ export default function Canteen() {
         
         <Card className="p-6">
           <CheckCircle2 className="h-8 w-8 text-purple-500 mb-2" />
-          <p className="font-bold text-2xl">87</p>
-          <p className="text-sm text-muted-foreground">Orders This Month</p>
+          <p className="font-bold text-2xl">{userOrders.length}</p>
+          <p className="text-sm text-muted-foreground">Total Orders</p>
         </Card>
       </div>
       
@@ -207,53 +158,115 @@ export default function Canteen() {
           <Card className="p-6">
             <h2 className="text-2xl font-bold mb-4">Today's Menu</h2>
             
-            <Tabs defaultValue="all">
-              <TabsList className="mb-4">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="breakfast">Breakfast</TabsTrigger>
-                <TabsTrigger value="lunch">Lunch</TabsTrigger>
-                <TabsTrigger value="snacks">Snacks</TabsTrigger>
-                <TabsTrigger value="beverages">Beverages</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="all" className="space-y-4">
-                {menuItems.map((item) => (
-                  <Card key={item.id} className="p-4 hover:shadow-card transition-smooth">
-                    <div className="flex gap-4">
-                      <img 
-                        src={item.image} 
-                        alt={item.name}
-                        className="w-24 h-24 object-cover rounded-lg"
-                      />
-                      
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h3 className="font-bold flex items-center gap-2">
-                              {item.name}
-                              {item.veg && <Leaf className="h-4 w-4 text-green-500" />}
-                              {item.popular && <Flame className="h-4 w-4 text-orange-500" />}
-                            </h3>
-                            <p className="text-lg font-bold text-primary">₹{item.price}</p>
-                          </div>
-                          <Button size="sm" onClick={() => addToCart(item)}>
-                            Add
-                          </Button>
-                        </div>
-                        
-                        <div className="flex gap-3 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Timer className="h-3 w-3" />
-                            {item.prepTime} mins
-                          </span>
-                          <span>{item.calories} cal</span>
-                        </div>
-                      </div>
+            {menuLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span className="ml-2">Loading menu...</span>
+              </div>
+            ) : (
+              <Tabs defaultValue="all">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="Main Course">Main Course</TabsTrigger>
+                  <TabsTrigger value="Snacks">Snacks</TabsTrigger>
+                  <TabsTrigger value="Beverages">Beverages</TabsTrigger>
+                  <TabsTrigger value="Desserts">Desserts</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="all" className="space-y-4">
+                  {availableMenuItems.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No menu items available. Check back later!
                     </div>
-                  </Card>
+                  ) : (
+                    availableMenuItems.map((item) => (
+                      <Card key={item.id} className="p-4 hover:shadow-card transition-smooth">
+                        <div className="flex gap-4">
+                          <img 
+                            src={item.image || 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop'} 
+                            alt={item.name}
+                            className="w-24 h-24 object-cover rounded-lg"
+                          />
+                          
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <h3 className="font-bold flex items-center gap-2">
+                                  {item.name}
+                                  {item.veg && <Leaf className="h-4 w-4 text-green-500" />}
+                                  {item.popular && <Flame className="h-4 w-4 text-orange-500" />}
+                                </h3>
+                                <p className="text-lg font-bold text-primary">₹{item.price}</p>
+                              </div>
+                              <Button size="sm" onClick={() => addToCart(item)}>
+                                Add
+                              </Button>
+                            </div>
+                            
+                            <div className="flex gap-3 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Timer className="h-3 w-3" />
+                                {item.prepTime} mins
+                              </span>
+                              <span>{item.calories} cal</span>
+                              <span className="capitalize">{item.category}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))
+                  )}
+                </TabsContent>
+                
+                {['Main Course', 'Snacks', 'Beverages', 'Desserts'].map(category => (
+                  <TabsContent key={category} value={category} className="space-y-4">
+                    {availableMenuItems.filter(item => item.category === category).length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No {category.toLowerCase()} items available.
+                      </div>
+                    ) : (
+                      availableMenuItems
+                        .filter(item => item.category === category)
+                        .map((item) => (
+                          <Card key={item.id} className="p-4 hover:shadow-card transition-smooth">
+                            <div className="flex gap-4">
+                              <img 
+                                src={item.image || 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop'} 
+                                alt={item.name}
+                                className="w-24 h-24 object-cover rounded-lg"
+                              />
+                              
+                              <div className="flex-1">
+                                <div className="flex items-start justify-between mb-2">
+                                  <div>
+                                    <h3 className="font-bold flex items-center gap-2">
+                                      {item.name}
+                                      {item.veg && <Leaf className="h-4 w-4 text-green-500" />}
+                                      {item.popular && <Flame className="h-4 w-4 text-orange-500" />}
+                                    </h3>
+                                    <p className="text-lg font-bold text-primary">₹{item.price}</p>
+                                  </div>
+                                  <Button size="sm" onClick={() => addToCart(item)}>
+                                    Add
+                                  </Button>
+                                </div>
+                                
+                                <div className="flex gap-3 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Timer className="h-3 w-3" />
+                                    {item.prepTime} mins
+                                  </span>
+                                  <span>{item.calories} cal</span>
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        ))
+                    )}
+                  </TabsContent>
                 ))}
-              </TabsContent>
-            </Tabs>
+              </Tabs>
+            )}
           </Card>
         </div>
         
@@ -284,7 +297,7 @@ export default function Canteen() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => removeFromCart(parseInt(itemId))}
+                            onClick={() => removeFromCart(itemId)}
                             className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
                           >
                             <X className="h-3 w-3" />
@@ -295,7 +308,7 @@ export default function Canteen() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => updateQuantity(parseInt(itemId), cartItem.quantity - 1)}
+                              onClick={() => updateQuantity(itemId, cartItem.quantity - 1)}
                               className="h-6 w-6 p-0"
                             >
                               <Minus className="h-3 w-3" />
@@ -306,7 +319,7 @@ export default function Canteen() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => updateQuantity(parseInt(itemId), cartItem.quantity + 1)}
+                              onClick={() => updateQuantity(itemId, cartItem.quantity + 1)}
                               className="h-6 w-6 p-0"
                             >
                               <Plus className="h-3 w-3" />
@@ -336,30 +349,54 @@ export default function Canteen() {
           
           {/* Active Orders */}
           <Card className="p-6">
-            <h3 className="font-bold text-lg mb-4">Active Orders</h3>
-            <div className="space-y-3">
-              {activeOrders.map((order) => (
-                <div 
-                  key={order.tokenNo}
-                  className={`p-4 rounded-lg border ${
-                    order.status === 'ready' 
-                      ? 'border-green-500 bg-green-500/10' 
-                      : 'border-border'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-lg">Token #{order.tokenNo}</span>
-                    <Badge variant={order.status === 'ready' ? 'default' : 'secondary'}>
-                      {order.status}
-                    </Badge>
+            <h3 className="font-bold text-lg mb-4">My Orders</h3>
+            {ordersLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="ml-2">Loading orders...</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {userOrders.length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    No orders yet. Place your first order!
                   </div>
-                  <p className="text-sm text-muted-foreground mb-1">
-                    {order.items.join(', ')}
-                  </p>
-                  <p className="text-sm font-medium">{order.time}</p>
-                </div>
-              ))}
-            </div>
+                ) : (
+                  userOrders.map((order) => (
+                    <div 
+                      key={order.id}
+                      className={`p-4 rounded-lg border ${
+                        order.status === 'picked' 
+                          ? 'border-green-500 bg-green-500/10' 
+                          : order.status === 'ready'
+                          ? 'border-blue-500 bg-blue-500/10'
+                          : 'border-border'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-lg">Order #{order.id.slice(-6)}</span>
+                        <Badge variant={
+                          order.status === 'picked' ? 'default' : 
+                          order.status === 'ready' ? 'secondary' : 
+                          'destructive'
+                        }>
+                          {order.status === 'picked' ? 'Picked Up' : 
+                           order.status === 'ready' ? 'Ready' : 
+                           'Pending'}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        {order.itemName} x {order.qty}
+                      </p>
+                      <p className="text-sm font-medium">₹{order.totalAmount}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Ordered: {new Date(order.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </Card>
         </div>
       </div>
