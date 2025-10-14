@@ -14,14 +14,31 @@ import {
   Timer,
   Plus,
   Minus,
-  X
+  X,
+  CreditCard,
+  Hash
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { toast } from 'sonner';
+import { PhoneVerificationModal } from '@/components/PhoneVerificationModal';
+import { OrderConfirmationModal } from '@/components/OrderConfirmationModal';
+import { formatAmount, generateOrderId, PaymentStatus } from '@/lib/razorpay';
+import { generateOrderAuthHash } from '@/lib/phoneAuth';
 
 export default function Canteen() {
   const { theme } = useTheme();
   const [cart, setCart] = useState<{[key: number]: {item: any, quantity: number}}>({});
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
+  const [showOrderConfirmation, setShowOrderConfirmation] = useState(false);
+  const [confirmedOrder, setConfirmedOrder] = useState<any>(null);
+  const [orderHistory, setOrderHistory] = useState<Array<{
+    id: string;
+    items: Array<{name: string, quantity: number, price: number}>;
+    total: number;
+    status: PaymentStatus;
+    createdAt: string;
+    paymentId?: string;
+  }>>([]);
   
   const menuItems = [
     { 
@@ -150,8 +167,84 @@ export default function Canteen() {
       toast.error('Cart is empty');
       return;
     }
-    toast.success('Order placed! Token #43');
+    setShowPhoneVerification(true);
+  };
+
+  const handlePhoneVerificationSuccess = (phoneNumber: string) => {
+    const cartItems = Object.values(cart);
+    const orderItems = cartItems.map(cartItem => ({
+      name: cartItem.item.name,
+      quantity: cartItem.quantity,
+      price: cartItem.item.price
+    }));
+
+    // Generate order details
+    const orderId = generateOrderId();
+    const timestamp = new Date().toISOString();
+    const orderHash = generateOrderAuthHash({
+      orderId,
+      phoneNumber,
+      total,
+      items: orderItems,
+      timestamp
+    });
+
+    // Create order confirmation
+    const orderDetails = {
+      orderId,
+      phoneNumber,
+      total,
+      items: orderItems,
+      timestamp,
+      hash: orderHash
+    };
+
+    // Add to order history
+    const newOrder = {
+      id: orderId,
+      items: orderItems,
+      total: total,
+      status: PaymentStatus.SUCCESS,
+      createdAt: timestamp,
+      paymentId: 'phone_verified',
+      phoneNumber,
+      hash: orderHash
+    };
+
+    setOrderHistory(prev => [newOrder, ...prev]);
     setCart({});
+    setConfirmedOrder(orderDetails);
+    setShowOrderConfirmation(true);
+    
+    toast.success(`Order confirmed! Hash: ${orderHash.slice(-8)}`);
+  };
+
+  const handlePaymentSuccess = (orderId: string, paymentId: string) => {
+    // This method is kept for compatibility but not used in direct flow
+    const cartItems = Object.values(cart);
+    const orderItems = cartItems.map(cartItem => ({
+      name: cartItem.item.name,
+      quantity: cartItem.quantity,
+      price: cartItem.item.price
+    }));
+
+    const newOrder = {
+      id: orderId,
+      items: orderItems,
+      total: total,
+      status: PaymentStatus.SUCCESS,
+      createdAt: new Date().toISOString(),
+      paymentId: paymentId
+    };
+
+    setOrderHistory(prev => [newOrder, ...prev]);
+    setCart({});
+    
+    toast.success(`Order placed successfully! Order ID: ${orderId}`);
+  };
+
+  const handlePaymentFailure = (error: string) => {
+    toast.error(`Payment failed: ${error}`);
   };
   
   const total = Object.values(cart).reduce((sum, cartItem) => 
@@ -324,10 +417,11 @@ export default function Canteen() {
                 <div className="border-t pt-4 space-y-3">
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
-                    <span className="text-primary">₹{total}</span>
+                    <span className="text-primary">{formatAmount(total)}</span>
                   </div>
                   <Button className="w-full" onClick={placeOrder}>
-                    Place Order
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Pay & Place Order
                   </Button>
                 </div>
               </>
@@ -336,33 +430,80 @@ export default function Canteen() {
           
           {/* Active Orders */}
           <Card className="p-6">
-            <h3 className="font-bold text-lg mb-4">Active Orders</h3>
+            <h3 className="font-bold text-lg mb-4">Recent Orders</h3>
             <div className="space-y-3">
-              {activeOrders.map((order) => (
-                <div 
-                  key={order.tokenNo}
-                  className={`p-4 rounded-lg border ${
-                    order.status === 'ready' 
-                      ? 'border-green-500 bg-green-500/10' 
-                      : 'border-border'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-lg">Token #{order.tokenNo}</span>
-                    <Badge variant={order.status === 'ready' ? 'default' : 'secondary'}>
-                      {order.status}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-1">
-                    {order.items.join(', ')}
-                  </p>
-                  <p className="text-sm font-medium">{order.time}</p>
+              {orderHistory.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground">
+                  <ShoppingCart className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No orders yet</p>
                 </div>
-              ))}
+              ) : (
+                orderHistory.slice(0, 3).map((order) => (
+                  <div 
+                    key={order.id}
+                    className={`p-4 rounded-lg border ${
+                      order.status === PaymentStatus.SUCCESS 
+                        ? 'border-green-500 bg-green-500/10' 
+                        : 'border-border'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-lg">Order #{order.id.slice(-6)}</span>
+                      <Badge variant={order.status === PaymentStatus.SUCCESS ? 'default' : 'secondary'}>
+                        {order.status}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {order.items.map(item => `${item.name} (${item.quantity})`).join(', ')}
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm font-medium">{formatAmount(order.total)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(order.createdAt).toLocaleTimeString()}
+                      </p>
+                    </div>
+                    {order.hash && (
+                      <div className="mt-2 p-2 bg-muted rounded text-xs">
+                        <div className="flex items-center gap-1 mb-1">
+                          <Hash className="h-3 w-3" />
+                          <span className="font-medium">Auth Hash:</span>
+                        </div>
+                        <code className="text-xs break-all">{order.hash}</code>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </Card>
         </div>
       </div>
+
+      {/* Phone Verification Modal */}
+      <PhoneVerificationModal
+        isOpen={showPhoneVerification}
+        onClose={() => setShowPhoneVerification(false)}
+        onVerificationSuccess={handlePhoneVerificationSuccess}
+        total={total}
+        cartItems={Object.values(cart).map(cartItem => ({
+          id: cartItem.item.id,
+          name: cartItem.item.name,
+          price: cartItem.item.price,
+          quantity: cartItem.quantity
+        }))}
+      />
+
+      {/* Order Confirmation Modal */}
+      {confirmedOrder && (
+        <OrderConfirmationModal
+          isOpen={showOrderConfirmation}
+          onClose={() => {
+            setShowOrderConfirmation(false);
+            setConfirmedOrder(null);
+          }}
+          orderDetails={confirmedOrder}
+        />
+      )}
     </div>
   );
 }

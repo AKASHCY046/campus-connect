@@ -47,6 +47,7 @@ Create a `.env` file in the root directory:
 ```env
 VITE_MONGODB_URI=your_mongodb_connection_string
 VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+VITE_RAZORPAY_KEY_ID=your_razorpay_key_id
 ```
 
 4. Start the development server:
@@ -55,6 +56,23 @@ npm run dev
 ```
 
 The application will be available at `http://localhost:8080`
+
+## Payment Integration (Razorpay)
+
+This application includes Razorpay payment integration for the canteen pre-order system. To set up payments:
+
+1. **Create a Razorpay Account**: Sign up at [Razorpay Dashboard](https://dashboard.razorpay.com/)
+2. **Get API Keys**: 
+   - Go to Settings > API Keys in your Razorpay dashboard
+   - Copy your Test/Live Key ID (not the secret key)
+   - Add it to your `.env` file as `VITE_RAZORPAY_KEY_ID`
+3. **Test Payments**: Use test mode for development with test card numbers
+4. **Production Setup**: Switch to live keys for production deployment
+
+### Test Card Numbers (for development):
+- **Success**: 4111 1111 1111 1111
+- **Failure**: 4000 0000 0000 0002
+- **UPI**: Use any valid UPI ID
 
 ## Available Scripts
 
