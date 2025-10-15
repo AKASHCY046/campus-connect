@@ -1,4 +1,3 @@
-import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,8 +21,6 @@ import CanteenDashboard from "./pages/CanteenDashboard";
 import FacultyDashboard from "./pages/FacultyDashboard";
 import CampusConnectApp from "./pages/CampusConnectApp";
 import { config } from "@/lib/mongodb";
-import { initializeSampleData } from "@/lib/sample-data";
-import { initializeLibrarySampleData } from "@/lib/library-sample-data";
 
 // Use environment configuration
 const CLERK_PUBLISHABLE_KEY = config.clerk.publishableKey;
@@ -37,43 +34,35 @@ const Layout = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-const App = () => {
-  // Initialize sample data on app start
-  React.useEffect(() => {
-    initializeSampleData();
-    initializeLibrarySampleData();
-  }, []);
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/sign-in/*" element={<SignIn />} />
-                <Route path="/sign-up/*" element={<SignUp />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-                <Route path="/librarian" element={<ProtectedRoute><Layout><LibrarianDashboard /></Layout></ProtectedRoute>} />
-                <Route path="/canteen-incharge" element={<ProtectedRoute><Layout><CanteenDashboard /></Layout></ProtectedRoute>} />
-                <Route path="/library" element={<ProtectedRoute><Layout><Library /></Layout></ProtectedRoute>} />
-                <Route path="/canteen" element={<ProtectedRoute><Layout><Canteen /></Layout></ProtectedRoute>} />
-                <Route path="/academic" element={<ProtectedRoute><Layout><Academic /></Layout></ProtectedRoute>} />
-                <Route path="/campus" element={<ProtectedRoute><Layout><Campus /></Layout></ProtectedRoute>} />
-                <Route path="/faculty" element={<ProtectedRoute><Layout><FacultyDashboard /></Layout></ProtectedRoute>} />
-                <Route path="/canteen-integrated" element={<ProtectedRoute><Layout><CampusConnectApp /></Layout></ProtectedRoute>} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </ClerkProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  );
-};
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/sign-in/*" element={<SignIn />} />
+              <Route path="/sign-up/*" element={<SignUp />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+              <Route path="/librarian" element={<ProtectedRoute><Layout><LibrarianDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/canteen-incharge" element={<ProtectedRoute><Layout><CanteenDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/library" element={<ProtectedRoute><Layout><Library /></Layout></ProtectedRoute>} />
+              <Route path="/canteen" element={<ProtectedRoute><Layout><Canteen /></Layout></ProtectedRoute>} />
+              <Route path="/academic" element={<ProtectedRoute><Layout><Academic /></Layout></ProtectedRoute>} />
+              <Route path="/campus" element={<ProtectedRoute><Layout><Campus /></Layout></ProtectedRoute>} />
+              <Route path="/faculty" element={<ProtectedRoute><Layout><FacultyDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/canteen-integrated" element={<ProtectedRoute><Layout><CampusConnectApp /></Layout></ProtectedRoute>} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ClerkProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
+);
 
 export default App;
