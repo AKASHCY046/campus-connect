@@ -31,6 +31,7 @@ interface AuthContextType {
     login: (email: string, password: string) => Promise<void>;
     signUp: (email: string, password: string, full_name: string, role: UserRole, inviteCode?: string) => Promise<void>;
     logout: () => void;
+    updateProfile: (updates: { full_name?: string; avatar_url?: string }) => void;
     isAdmin: boolean;
     isSignedIn: boolean;
     blockUser: (userId: string) => void;
@@ -186,6 +187,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('campus_connect_session');
     };
 
+    const updateProfile = (updates: { full_name?: string; avatar_url?: string }) => {
+        setUser(prev => {
+            if (!prev) return prev;
+            const next = { ...prev, ...updates };
+            localStorage.setItem('campus_connect_session', JSON.stringify(next));
+            const users = getUsers();
+            const idx = users.findIndex(u => u.id === prev.id);
+            if (idx >= 0) {
+                users[idx] = { ...users[idx], ...updates };
+                saveUsers(users);
+            }
+            return next;
+        });
+    };
+
     const blockUser = (userId: string) => {
         const users = getUsers();
         const idx = users.findIndex(u => u.id === userId);
@@ -228,7 +244,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return (
         <AuthContext.Provider value={{
-            user, isLoading, login, signUp, logout, isAdmin, isSignedIn,
+            user, isLoading, login, signUp, logout, updateProfile, isAdmin, isSignedIn,
             blockUser, unblockUser, deleteUser, getAllUsers,
         }}>
             {children}

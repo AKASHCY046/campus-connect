@@ -115,13 +115,11 @@ export default function Dashboard() {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">
+        <h1 className="mb-2">
           Welcome back,{' '}
-          <span className={theme === 'cyber' ? 'gradient-cyber bg-clip-text text-transparent' : 'text-primary'}>
-            {username}
-          </span>
+          <span className={theme === 'cyber' ? 'text-gradient' : 'text-primary'}>{username}</span>
         </h1>
-        <p className="text-muted-foreground">Here's your campus activity overview</p>
+        <p className="text-muted-foreground">Here&apos;s your campus activity overview.</p>
       </div>
 
       {/* Stats Grid */}

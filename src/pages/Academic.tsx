@@ -191,12 +191,10 @@ export default function Academic() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">
-          <span className={theme === 'cyber' ? 'gradient-cyber bg-clip-text text-transparent' : ''}>
-            Academic Hub
-          </span>
+        <h1 className="mb-2">
+          <span className={theme === 'cyber' ? 'text-gradient' : ''}>Academic Hub</span>
         </h1>
-        <p className="text-muted-foreground mb-6">Access study materials, assignments, and collaborate with peers</p>
+        <p className="text-muted-foreground">Access study materials, assignments and collaborate with peers.</p>
       </div>
 
       <Card className="p-6 mb-8 border-primary/20">

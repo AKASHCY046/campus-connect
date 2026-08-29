@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import type { UserRole } from '@/hooks/useUserProfile';
 import {
   BookOpen,
   UtensilsCrossed,
@@ -10,167 +11,145 @@ import {
   Building2,
   Sparkles,
   ArrowRight,
-  Award,
   Users,
-  TrendingUp
+  TrendingUp,
 } from 'lucide-react';
+
+const ROLE_HOME: Record<UserRole, string> = {
+  Student: '/dashboard',
+  Admin: '/dashboard',
+  Professor: '/faculty',
+  Librarian: '/librarian',
+  'Canteen Staff': '/canteen-incharge',
+};
+
+const FEATURES = [
+  {
+    icon: BookOpen,
+    title: 'Smart Library',
+    description: 'Reserve books, track loans and clear fines without queuing at the desk.',
+    tint: 'bg-blue-500/10 text-blue-500',
+  },
+  {
+    icon: UtensilsCrossed,
+    title: 'Digital Canteen',
+    description: 'Pre-order meals, pay from your wallet and pick up with a token number.',
+    tint: 'bg-orange-500/10 text-orange-500',
+  },
+  {
+    icon: GraduationCap,
+    title: 'Academic Hub',
+    description: 'Get study materials, submit assignments and join study groups by code.',
+    tint: 'bg-violet-500/10 text-violet-500',
+  },
+  {
+    icon: Building2,
+    title: 'Campus Services',
+    description: 'Book facilities, register for events and stay on top of announcements.',
+    tint: 'bg-emerald-500/10 text-emerald-500',
+  },
+];
+
+const STATS = [
+  { icon: Users, value: '10K+', label: 'Active students' },
+  { icon: BookOpen, value: '50K+', label: 'Books issued' },
+  { icon: UtensilsCrossed, value: '5K+', label: 'Meals served' },
+  { icon: TrendingUp, value: '24/7', label: 'Availability' },
+];
 
 export default function Home() {
   const { theme } = useTheme();
   const { isSignedIn, user } = useAuth();
-
-  const getDashboardLink = () => {
-    if (!user) return '/sign-in';
-    const roleMap: any = {
-      'Student': '/dashboard',
-      'Professor': '/faculty',
-      'Librarian': '/librarian',
-      'Canteen Staff': '/canteen-incharge',
-      'Admin': '/dashboard'
-    };
-    return roleMap[user.role] || '/dashboard';
-  };
-
-  const features = [
-    {
-      icon: BookOpen,
-      title: 'Smart Library',
-      description: 'Browse, issue, and return books with QR codes. Track fines and reading history.',
-      color: 'text-blue-500'
-    },
-    {
-      icon: UtensilsCrossed,
-      title: 'Digital Canteen',
-      description: 'Pre-order meals, skip queues, and manage your food wallet seamlessly.',
-      color: 'text-orange-500'
-    },
-    {
-      icon: GraduationCap,
-      title: 'Academic Hub',
-      description: 'Access study materials, collaborate on projects, and share resources.',
-      color: 'text-purple-500'
-    },
-    {
-      icon: Building2,
-      title: 'Campus Services',
-      description: 'Hostel management, fee payments, events, and campus navigation.',
-      color: 'text-green-500'
-    },
-  ];
-
-  const stats = [
-    { icon: Users, value: '10K+', label: 'Active Students' },
-    { icon: BookOpen, value: '50K+', label: 'Books Issued' },
-    { icon: UtensilsCrossed, value: '5K+', label: 'Meals Served' },
-    { icon: TrendingUp, value: '24/7', label: 'Availability' },
-  ];
+  const dashboardLink = user ? ROLE_HOME[user.role] : '/sign-in';
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className={`relative overflow-hidden ${theme === 'cyber' ? 'bg-gradient-to-br from-background via-background to-primary/10' : 'bg-gradient-to-br from-primary/5 to-background'}`}>
-        <div className="container mx-auto px-4 py-20 lg:py-32">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
+    <div>
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 to-background">
+        <div className="container mx-auto px-4 py-24 lg:py-32">
+          <div className="mx-auto max-w-3xl text-center animate-fade-in-up">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-sm font-medium">
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">Your Complete Campus Companion</span>
+              Your complete campus companion
             </div>
-
-            <h1 className="text-5xl lg:text-7xl font-bold mb-6">
-              Campus Life,
-              <span className={theme === 'cyber' ? 'gradient-cyber bg-clip-text text-transparent' : 'text-primary'}>
-                {' '}Simplified
-              </span>
+            <h1 className="text-4xl font-display font-bold tracking-tight sm:text-5xl lg:text-6xl">
+              Campus life,{' '}
+              <span className={theme === 'cyber' ? 'text-gradient' : 'text-primary'}>simplified</span>
             </h1>
-
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              One unified platform for library, canteen, academics, and campus services.
-              Built by students, for students.
+            <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
+              One platform for the library, canteen, academics and campus services — built for
+              students, faculty and staff.
             </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               {isSignedIn ? (
-                <Link to={getDashboardLink()}>
-                  <Button size="lg" className="gap-2 text-lg">
-                    Go to Dashboard
-                    <Sparkles className="h-5 w-5" />
-                  </Button>
-                </Link>
+                <Button asChild size="lg" className="gap-2">
+                  <Link to={dashboardLink}>
+                    Go to dashboard <ArrowRight className="h-5 w-5" />
+                  </Link>
+                </Button>
               ) : (
                 <>
-                  <Link to="/sign-in">
-                    <Button size="lg" className="gap-2 text-lg">
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link to="/sign-up">
-                    <Button size="lg" variant="outline" className="text-lg">
-                      Sign Up
-                    </Button>
-                  </Link>
+                  <Button asChild size="lg">
+                    <Link to="/sign-in">Sign in</Link>
+                  </Button>
+                  <Button asChild size="lg" variant="outline">
+                    <Link to="/sign-up">Create account</Link>
+                  </Button>
                 </>
               )}
             </div>
           </div>
         </div>
-
-        {/* Decorative Elements */}
-        <div className={`absolute top-20 right-10 w-72 h-72 ${theme === 'cyber' ? 'bg-primary/20' : 'bg-primary/10'} rounded-full blur-3xl animate-pulse`}></div>
-        <div className={`absolute bottom-20 left-10 w-96 h-96 ${theme === 'cyber' ? 'bg-secondary/20' : 'bg-primary/5'} rounded-full blur-3xl animate-pulse delay-1000`}></div>
+        <div className="pointer-events-none absolute -right-16 top-10 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
+        <div className="pointer-events-none absolute -left-16 bottom-0 h-80 w-80 rounded-full bg-primary/5 blur-3xl" />
       </section>
 
       {/* Features */}
       <section className="container mx-auto px-4 py-20">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold mb-4">Everything You Need</h2>
-          <p className="text-xl text-muted-foreground">All essential campus services in one place</p>
+        <div className="mb-12 text-center">
+          <h2>Everything in one place</h2>
+          <p className="mt-2 text-lg text-muted-foreground">
+            Four connected modules, one login.
+          </p>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature, idx) => {
-            const Icon = feature.icon;
-            return (
-              <Card key={idx} className="p-6 card-hover">
-                <Icon className={`h-12 w-12 mb-4 ${feature.color}`} />
-                <h3 className="font-bold text-xl mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground">{feature.description}</p>
-              </Card>
-            );
-          })}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {FEATURES.map((f) => (
+            <Card key={f.title} className="card-hover p-6">
+              <span className={`mb-4 grid h-12 w-12 place-items-center rounded-xl ${f.tint}`}>
+                <f.icon className="h-6 w-6" />
+              </span>
+              <h3 className="mb-2 text-lg font-bold">{f.title}</h3>
+              <p className="text-sm text-muted-foreground">{f.description}</p>
+            </Card>
+          ))}
         </div>
       </section>
 
       {/* Stats */}
-      <section className={`${theme === 'cyber' ? 'gradient-cyber-subtle' : 'bg-muted/50'} py-20`}>
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, idx) => {
-              const Icon = stat.icon;
-              return (
-                <div key={idx} className="text-center">
-                  <Icon className="h-10 w-10 mx-auto mb-3 text-primary" />
-                  <p className="text-4xl font-bold mb-1">{stat.value}</p>
-                  <p className="text-muted-foreground">{stat.label}</p>
-                </div>
-              );
-            })}
-          </div>
+      <section className="border-y bg-muted/40 py-16">
+        <div className="container mx-auto grid grid-cols-2 gap-8 px-4 md:grid-cols-4">
+          {STATS.map((s) => (
+            <div key={s.label} className="text-center">
+              <s.icon className="mx-auto mb-3 h-9 w-9 text-primary" />
+              <p className="text-3xl font-display font-bold">{s.value}</p>
+              <p className="text-sm text-muted-foreground">{s.label}</p>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* CTA */}
       <section className="container mx-auto px-4 py-20">
-        <Card className={`p-12 text-center ${theme === 'cyber' ? 'gradient-cyber' : 'bg-primary'} text-white`}>
-          <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-xl mb-8 opacity-90">
-            Join thousands of students already using Campus Connect
+        <Card className="overflow-hidden bg-primary p-10 text-center text-primary-foreground sm:p-14">
+          <h2 className="text-primary-foreground">Ready to get started?</h2>
+          <p className="mx-auto mt-3 max-w-xl text-primary-foreground/90">
+            Sign in with one of the demo roles to explore every module end to end.
           </p>
-          <Link to={getDashboardLink()}>
-            <Button size="lg" variant="secondary" className="gap-2">
-              Launch Dashboard
-              <ArrowRight className="h-5 w-5" />
-            </Button>
-          </Link>
+          <Button asChild size="lg" variant="secondary" className="mt-8 gap-2">
+            <Link to={dashboardLink}>
+              {isSignedIn ? 'Open dashboard' : 'Sign in'} <ArrowRight className="h-5 w-5" />
+            </Link>
+          </Button>
         </Card>
       </section>
     </div>
