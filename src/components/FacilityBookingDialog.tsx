@@ -147,7 +147,11 @@ export function FacilityBookingDialog({ facility, onBookingSubmit, trigger }: Fa
                   selected={date}
                   onSelect={setDate}
                   initialFocus
-                  disabled={(date) => date < new Date()}
+                  disabled={(d) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return d < today;
+                  }}
                 />
               </PopoverContent>
             </Popover>

@@ -15,9 +15,6 @@ import {
   TrendingUp
 } from 'lucide-react';
 
-import { useQuery } from '@tanstack/react-query';
-import { supabase, TABLES } from '@/lib/supabase';
-
 export default function Home() {
   const { theme } = useTheme();
   const { isSignedIn, user } = useAuth();
@@ -33,24 +30,6 @@ export default function Home() {
     };
     return roleMap[user.role] || '/dashboard';
   };
-
-  // Fetch stats
-  const { data: statsData } = useQuery({
-    queryKey: ['campus-stats'],
-    queryFn: async () => {
-      const [students, books, orders] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'Student'),
-        supabase.from(TABLES.ISSUED_BOOKS).select('*', { count: 'exact', head: true }),
-        supabase.from(TABLES.ORDERS).select('*', { count: 'exact', head: true }),
-      ]);
-
-      return {
-        students: students.count || 0,
-        books: books.count || 0,
-        orders: orders.count || 0,
-      };
-    },
-  });
 
   const features = [
     {
@@ -80,9 +59,9 @@ export default function Home() {
   ];
 
   const stats = [
-    { icon: Users, value: statsData ? `${statsData.students}+` : '10K+', label: 'Active Students' },
-    { icon: BookOpen, value: statsData ? `${statsData.books}+` : '50K+', label: 'Books Issued' },
-    { icon: UtensilsCrossed, value: statsData ? `${statsData.orders}+` : '5K+', label: 'Meals Served' },
+    { icon: Users, value: '10K+', label: 'Active Students' },
+    { icon: BookOpen, value: '50K+', label: 'Books Issued' },
+    { icon: UtensilsCrossed, value: '5K+', label: 'Meals Served' },
     { icon: TrendingUp, value: '24/7', label: 'Availability' },
   ];
 
@@ -184,7 +163,7 @@ export default function Home() {
         <Card className={`p-12 text-center ${theme === 'cyber' ? 'gradient-cyber' : 'bg-primary'} text-white`}>
           <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
           <p className="text-xl mb-8 opacity-90">
-            Join thousands of students already using CampusHub
+            Join thousands of students already using Campus Connect
           </p>
           <Link to={getDashboardLink()}>
             <Button size="lg" variant="secondary" className="gap-2">

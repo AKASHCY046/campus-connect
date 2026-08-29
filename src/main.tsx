@@ -1,26 +1,12 @@
 import { createRoot } from "react-dom/client";
+import { QueryClient } from "@tanstack/react-query";
 import App from "./App.tsx";
 import "./index.css";
 
-// Load and validate environment variables
-import { validateEnvironment, mongoClient } from "./lib/mongodb";
 import { initializeAppPerformance } from "./lib/performance";
 import { initializeSampleData } from "./lib/sample-data";
-import { QueryClient } from "@tanstack/react-query";
 
-// Validate environment variables on startup
-try {
-  validateEnvironment();
-  
-  // Log MongoDB connection info (development only)
-  if (import.meta.env.DEV) {
-    mongoClient.logConnectionInfo();
-  }
-} catch (error) {
-  console.error("Environment validation failed:", error);
-}
-
-// ⚡ Initialize performance optimizations
+// Optimized query client used by the performance bootstrap
 const performanceQueryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -34,6 +20,7 @@ const performanceQueryClient = new QueryClient({
   },
 });
 
+// Seed the local-first data layer before the first render
 initializeSampleData();
 initializeAppPerformance(performanceQueryClient).catch(console.debug);
 

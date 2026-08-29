@@ -12,19 +12,22 @@ interface AddMenuItemDialogProps {
   onSuccess?: () => void;
 }
 
-const CATEGORIES = [
-  'breakfast',
-  'lunch',
-  'dinner',
-  'snacks',
-  'beverages'
-];
+type MenuCategory = 'breakfast' | 'lunch' | 'dinner' | 'snacks' | 'beverages';
+
+const CATEGORIES: MenuCategory[] = ['breakfast', 'lunch', 'dinner', 'snacks', 'beverages'];
 
 export const AddMenuItemDialog: React.FC<AddMenuItemDialogProps> = ({ onSuccess }) => {
   const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    category: MenuCategory;
+    price: string;
+    description: string;
+    available: boolean;
+    veg: boolean;
+  }>({
     name: '',
-    category: 'lunch' as const,
+    category: 'lunch',
     price: '',
     description: '',
     available: true,

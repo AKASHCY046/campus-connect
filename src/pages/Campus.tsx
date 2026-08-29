@@ -1,479 +1,306 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { 
-  Building2, 
-  Calendar, 
-  MapPin, 
-  Users, 
+import {
+  Building2,
+  Calendar,
+  MapPin,
+  Users,
   Phone,
-  Mail,
-  Clock,
   Star,
   Search,
-  Filter,
-  Ticket,
   Wifi,
   Car,
   Utensils,
   BookOpen,
-  GraduationCap,
   AlertCircle,
   CheckCircle2,
-  Info
+  Info,
+  Loader2,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { FacilityBookingDialog } from '@/components/FacilityBookingDialog';
 import type { Facility, FacilityBooking, BookingRequest } from '@/types/facility';
+import { getEvents, getEventRegistrations, registerForEvent, type CampusEvent } from '@/lib/services/events';
+import {
+  getFacilities,
+  getFacilityBookings,
+  createFacilityBooking,
+} from '@/lib/services/facilities';
+import { pushNotification } from '@/lib/services/notifications';
+
+const SERVICES = [
+  { id: 1, name: 'Hostel Management', category: 'Accommodation', description: 'Room allocation, maintenance requests, and hostel facilities.', contact: '+91 98765 43210', location: 'Hostel Block A', rating: 4.2, icon: Building2 },
+  { id: 2, name: 'Transportation', category: 'Transport', description: 'Campus shuttle service, route schedules and parking passes.', contact: '+91 98765 43211', location: 'Main Gate', rating: 4.5, icon: Car },
+  { id: 3, name: 'Wi-Fi & IT Helpdesk', category: 'Technology', description: 'Campus-wide connectivity and device support.', contact: 'helpdesk@campus.edu', location: 'IT Department', rating: 4.6, icon: Wifi },
+  { id: 4, name: 'Health Centre', category: 'Health', description: '24/7 medical assistance and emergency care.', contact: '+91 98765 43212', location: 'Health Centre', rating: 4.7, icon: AlertCircle },
+  { id: 5, name: 'Food Court', category: 'Food', description: 'Multiple dining outlets and monthly meal plans.', contact: '+91 98765 43213', location: 'Food Court', rating: 4.3, icon: Utensils },
+  { id: 6, name: 'Central Library', category: 'Academic', description: 'Study spaces, research assistance and digital archives.', contact: 'library@campus.edu', location: 'Central Library', rating: 4.9, icon: BookOpen },
+];
+
+const ANNOUNCEMENTS = [
+  { id: 1, title: 'Campus Wi-Fi upgraded to Wi-Fi 6', category: 'Technology', date: '2026-08-20', priority: 'high', description: 'The campus network now supports Wi-Fi 6. Connect to "CampusConnect-6" for faster speeds.' },
+  { id: 2, title: 'Hostel Block B maintenance', category: 'Maintenance', date: '2026-08-18', priority: 'medium', description: 'Scheduled maintenance from Sep 2–4. Temporary rooms will be allocated to affected residents.' },
+  { id: 3, title: 'Library 24×7 during exams', category: 'Academic', date: '2026-08-15', priority: 'low', description: 'The Central Library stays open around the clock through the examination period.' },
+  { id: 4, title: 'New shuttle route to Tech Park', category: 'Transport', date: '2026-08-12', priority: 'medium', description: 'A new shuttle route now connects the campus to the Tech Park every 30 minutes.' },
+];
 
 export default function Campus() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [facilityBookings, setFacilityBookings] = useState<FacilityBooking[]>([]);
-  
-  // Campus Events
-  const events = [
-    { 
-      id: 1,
-      title: 'Tech Fest 2025', 
-      type: 'Festival',
-      date: '2025-10-25',
-      time: '9:00 AM',
-      location: 'Main Auditorium',
-      description: 'Annual technology festival with coding competitions and tech talks',
-      attendees: 500,
-      registered: true,
-      image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop'
-    },
-    { 
-      id: 2,
-      title: 'Career Fair', 
-      type: 'Career',
-      date: '2025-10-28',
-      time: '10:00 AM',
-      location: 'Sports Complex',
-      description: 'Meet with top companies and explore career opportunities',
-      attendees: 300,
-      registered: false,
-      image: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=400&h=300&fit=crop'
-    },
-    { 
-      id: 3,
-      title: 'Cultural Night', 
-      type: 'Cultural',
-      date: '2025-11-02',
-      time: '6:00 PM',
-      location: 'Open Air Theatre',
-      description: 'Celebrate diversity with performances from different cultures',
-      attendees: 800,
-      registered: true,
-      image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=300&fit=crop'
-    },
-    { 
-      id: 4,
-      title: 'Sports Day', 
-      type: 'Sports',
-      date: '2025-11-05',
-      time: '8:00 AM',
-      location: 'Sports Ground',
-      description: 'Inter-department sports competitions and games',
-      attendees: 400,
-      registered: false,
-      image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop'
-    },
-  ];
 
-  // Campus Services
-  const services = [
-    { 
-      id: 1,
-      name: 'Hostel Management', 
-      category: 'Accommodation',
-      description: 'Room allocation, maintenance requests, and hostel facilities',
-      status: 'Available',
-      contact: '+91-9876543210',
-      location: 'Hostel Block A',
-      rating: 4.2,
-      icon: Building2
-    },
-    { 
-      id: 2,
-      name: 'Transportation', 
-      category: 'Transport',
-      description: 'Campus shuttle service and parking facilities',
-      status: 'Available',
-      contact: '+91-9876543211',
-      location: 'Main Gate',
-      rating: 4.5,
-      icon: Car
-    },
-    { 
-      id: 3,
-      name: 'WiFi Services', 
-      category: 'Technology',
-      description: 'High-speed internet access across campus',
-      status: 'Available',
-      contact: 'wifi@campus.edu',
-      location: 'IT Department',
-      rating: 4.8,
-      icon: Wifi
-    },
-    { 
-      id: 4,
-      name: 'Medical Center', 
-      category: 'Health',
-      description: '24/7 medical assistance and emergency care',
-      status: 'Available',
-      contact: '+91-9876543212',
-      location: 'Health Center',
-      rating: 4.7,
-      icon: AlertCircle
-    },
-    { 
-      id: 5,
-      name: 'Cafeteria', 
-      category: 'Food',
-      description: 'Multiple dining options and meal plans',
-      status: 'Available',
-      contact: '+91-9876543213',
-      location: 'Food Court',
-      rating: 4.3,
-      icon: Utensils
-    },
-    { 
-      id: 6,
-      name: 'Library Services', 
-      category: 'Academic',
-      description: 'Study spaces, research assistance, and digital resources',
-      status: 'Available',
-      contact: 'library@campus.edu',
-      location: 'Central Library',
-      rating: 4.9,
-      icon: BookOpen
-    },
-  ];
+  const [events, setEvents] = useState<CampusEvent[]>([]);
+  const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(new Set());
+  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [bookings, setBookings] = useState<FacilityBooking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [readAnnouncements, setReadAnnouncements] = useState<Set<number>>(new Set());
 
-  // Campus Facilities
-  const facilities: Facility[] = [
-    { 
-      id: 'lab-1',
-      name: 'Computer Lab A', 
-      type: 'laboratory',
-      building: 'Tech Building',
-      floor: '2nd Floor',
-      capacity: 50,
-      equipment: ['High-end PCs', 'Projector', 'Whiteboard'],
-      amenities: ['WiFi', 'Power Outlets'],
-      hours: '8:00 AM - 10:00 PM'
-    },
-    { 
-      id: 'hall-1',
-      name: 'Seminar Hall 1', 
-      type: 'seminar-hall',
-      building: 'Admin Building',
-      floor: '3rd Floor',
-      capacity: 80,
-      equipment: ['Projector', 'Sound System', 'Microphone'],
-      amenities: ['WiFi', 'Air Conditioning'],
-      hours: '9:00 AM - 6:00 PM'
-    },
-    { 
-      id: 'conf-1',
-      name: 'Conference Room B', 
-      type: 'conference-room',
-      building: 'Admin Building',
-      floor: '2nd Floor',
-      capacity: 20,
-      equipment: ['Projector', 'Whiteboard', 'Video Conferencing'],
-      amenities: ['WiFi'],
-      hours: '9:00 AM - 6:00 PM'
-    },
-  ];
+  const userId = user?.id ?? 'anonymous';
+  const userName = user?.full_name ?? 'Guest';
 
-  // Campus News & Announcements
-  const announcements = [
-    { 
-      id: 1,
-      title: 'New WiFi Network Launched', 
-      category: 'Technology',
-      date: '2025-10-15',
-      priority: 'high',
-      description: 'Campus-wide high-speed WiFi network is now available. Connect to "CampusConnect-5G" for faster internet access.',
-      read: false
-    },
-    { 
-      id: 2,
-      title: 'Hostel Maintenance Schedule', 
-      category: 'Maintenance',
-      date: '2025-10-14',
-      priority: 'medium',
-      description: 'Scheduled maintenance for Hostel Block B from Oct 20-22. Alternative accommodation will be provided.',
-      read: true
-    },
-    { 
-      id: 3,
-      title: 'Library Extended Hours', 
-      category: 'Academic',
-      date: '2025-10-13',
-      priority: 'low',
-      description: 'Library will remain open 24/7 during exam period (Oct 25 - Nov 15).',
-      read: false
-    },
-    { 
-      id: 4,
-      title: 'Campus Shuttle Service Update', 
-      category: 'Transport',
-      date: '2025-10-12',
-      priority: 'medium',
-      description: 'New shuttle routes added. Check the updated schedule on the campus app.',
-      read: true
-    },
-  ];
-
-  const registerForEvent = (event: any) => {
-    toast.success(`Registered for ${event.title}!`);
-  };
-
-  const contactService = (service: any) => {
-    toast.success(`Contacting ${service.name}...`);
-  };
-
-  // Availability check (prevents overlapping bookings)
-  const isFacilityAvailable = (facilityId: string, date: string, startTime: string, endTime: string) => {
-    return facilityBookings.every(b => {
-      if (b.facilityId !== facilityId || b.date !== date || b.status === 'cancelled') return true;
-      const overlaps = (startTime < b.endTime) && (endTime > b.startTime);
-      return !overlaps;
-    });
-  };
-
-  const handleFacilityBooking = (bookingRequest: BookingRequest) => {
-    const facility = facilities.find(f => f.id === bookingRequest.facilityId);
-    if (!facility) {
-      toast.error('Facility not found');
-      return;
-    }
-    if (!isFacilityAvailable(bookingRequest.facilityId, bookingRequest.date, bookingRequest.startTime, bookingRequest.endTime)) {
-      toast.error('Time slot already booked. Choose a different time.');
-      return;
-    }
-    const newBooking: FacilityBooking = {
-      id: crypto.randomUUID(),
-      facilityId: facility.id,
-      facilityName: facility.name,
-      bookedBy: 'current-user',
-      bookedByName: 'Staff Member',
-      purpose: bookingRequest.purpose,
-      eventType: bookingRequest.eventType,
-      startTime: bookingRequest.startTime,
-      endTime: bookingRequest.endTime,
-      date: bookingRequest.date,
-      attendees: bookingRequest.attendees,
-      status: 'confirmed',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      notes: bookingRequest.notes,
-      equipmentRequested: bookingRequest.equipmentRequested
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const [evts, facs, regs, bkgs] = await Promise.all([
+          getEvents(),
+          getFacilities(),
+          getEventRegistrations(userId),
+          getFacilityBookings({ userId }),
+        ]);
+        if (!active) return;
+        setEvents(evts);
+        setFacilities(facs);
+        setRegisteredEventIds(new Set(regs.map((r) => r.event_id)));
+        setBookings(bkgs);
+      } catch (err) {
+        console.error('Failed to load campus data', err);
+        toast.error('Could not load campus data');
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
     };
-    setFacilityBookings(prev => [newBooking, ...prev]);
-    toast.success(`Booked ${facility.name} on ${bookingRequest.date}`);
+  }, [userId]);
+
+  const handleRegister = async (event: CampusEvent) => {
+    try {
+      await registerForEvent(event.id, userId);
+      setRegisteredEventIds((prev) => new Set(prev).add(event.id));
+      setEvents((prev) =>
+        prev.map((e) => (e.id === event.id ? { ...e, attendees: e.attendees + 1 } : e)),
+      );
+      pushNotification(userId, {
+        title: 'Event registration confirmed',
+        message: `You're registered for "${event.title}" on ${new Date(event.date).toLocaleDateString()}.`,
+        type: 'success',
+      });
+      toast.success(`Registered for ${event.title}`);
+    } catch {
+      toast.error('Registration failed. Please try again.');
+    }
   };
 
-  const markAsRead = (announcement: any) => {
-    toast.success(`Marked "${announcement.title}" as read`);
+  const handleFacilityBooking = async (request: BookingRequest) => {
+    if (request.endTime <= request.startTime) {
+      toast.error('End time must be after the start time.');
+      return;
+    }
+    try {
+      const booking = await createFacilityBooking(userId, userName, request);
+      setBookings((prev) => [booking, ...prev]);
+      pushNotification(userId, {
+        title: 'Facility booking submitted',
+        message: `${booking.facilityName} on ${booking.date} (${booking.startTime}–${booking.endTime}) is pending approval.`,
+        type: 'info',
+      });
+      toast.success(`Booking requested for ${booking.facilityName}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Booking failed');
+    }
   };
+
+  const q = searchQuery.trim().toLowerCase();
+  const filteredEvents = useMemo(
+    () => (q ? events.filter((e) => `${e.title} ${e.type} ${e.location}`.toLowerCase().includes(q)) : events),
+    [events, q],
+  );
+  const filteredFacilities = useMemo(
+    () => (q ? facilities.filter((f) => `${f.name} ${f.building} ${f.type}`.toLowerCase().includes(q)) : facilities),
+    [facilities, q],
+  );
+  const filteredServices = useMemo(
+    () => (q ? SERVICES.filter((s) => `${s.name} ${s.category}`.toLowerCase().includes(q)) : SERVICES),
+    [q],
+  );
+
+  const unreadAnnouncements = ANNOUNCEMENTS.filter((a) => !readAnnouncements.has(a.id)).length;
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
+    <div className="container mx-auto px-4 py-8 animate-fade-in">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">
-          <span className={theme === 'cyber' ? 'gradient-cyber bg-clip-text text-transparent' : ''}>
-            Campus Services
-          </span>
+        <h1 className="mb-2">
+          <span className={theme === 'cyber' ? 'text-gradient' : ''}>Campus Services</span>
         </h1>
-        <p className="text-muted-foreground mb-6">Explore events, services, and facilities across campus</p>
+        <p className="text-muted-foreground">Explore events, services and facilities across campus.</p>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-8">
-        <div className="flex gap-3 max-w-2xl">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input 
-              placeholder="Search events, services, or facilities..." 
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" className="gap-2">
-            <Filter className="h-4 w-4" />
-            Filters
-          </Button>
+      <div className="mb-8 max-w-2xl">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search events, services or facilities…"
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card className="p-6">
-          <Calendar className="h-8 w-8 text-blue-500 mb-2" />
-          <p className="font-bold text-2xl">{events.length}</p>
-          <p className="text-sm text-muted-foreground">Upcoming Events</p>
-        </Card>
-        
-        <Card className="p-6">
-          <Building2 className="h-8 w-8 text-green-500 mb-2" />
-          <p className="font-bold text-2xl">{services.length}</p>
-          <p className="text-sm text-muted-foreground">Campus Services</p>
-        </Card>
-        
-        <Card className="p-6">
-          <MapPin className="h-8 w-8 text-purple-500 mb-2" />
-          <p className="font-bold text-2xl">{facilities.length}</p>
-          <p className="text-sm text-muted-foreground">Available Facilities</p>
-        </Card>
-        
-        <Card className="p-6">
-          <Info className="h-8 w-8 text-orange-500 mb-2" />
-          <p className="font-bold text-2xl">{announcements.filter(a => !a.read).length}</p>
-          <p className="text-sm text-muted-foreground">New Announcements</p>
-        </Card>
+      <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+        {[
+          { icon: Calendar, label: 'Upcoming Events', value: events.length, tint: 'text-blue-500' },
+          { icon: Building2, label: 'Campus Services', value: SERVICES.length, tint: 'text-emerald-500' },
+          { icon: MapPin, label: 'Bookable Facilities', value: facilities.length, tint: 'text-violet-500' },
+          { icon: Info, label: 'New Announcements', value: unreadAnnouncements, tint: 'text-amber-500' },
+        ].map((s) => (
+          <Card key={s.label} className="p-5">
+            <s.icon className={`mb-2 h-7 w-7 ${s.tint}`} />
+            <p className="text-2xl font-bold">{s.value}</p>
+            <p className="text-sm text-muted-foreground">{s.label}</p>
+          </Card>
+        ))}
       </div>
 
-      {/* Main Content Tabs */}
       <Tabs defaultValue="events" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="events">Events</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="facilities">Facilities</TabsTrigger>
           <TabsTrigger value="announcements">Announcements</TabsTrigger>
         </TabsList>
 
-        {/* Events Tab */}
+        {/* Events */}
         <TabsContent value="events">
           <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Campus Events</h2>
-              <Button className="gap-2">
-                <Calendar className="h-4 w-4" />
-                View Calendar
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {events.map((event) => (
-                <Card key={event.id} className="p-4 hover:shadow-card transition-smooth">
-                  <div className="flex gap-4">
-                    <img 
-                      src={event.image} 
-                      alt={event.title}
-                      className="w-24 h-24 object-cover rounded-lg"
-                    />
-                    
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="font-bold">{event.title}</h3>
-                          <Badge variant="outline" className="mt-1">{event.type}</Badge>
+            <h2 className="mb-6">Campus Events</h2>
+            {filteredEvents.length === 0 ? (
+              <EmptyState message="No events match your search." />
+            ) : (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {filteredEvents.map((event) => {
+                  const registered = registeredEventIds.has(event.id);
+                  return (
+                    <Card key={event.id} className="overflow-hidden">
+                      <div className="flex gap-4 p-4">
+                        <img
+                          src={event.image}
+                          alt=""
+                          className="h-24 w-24 shrink-0 rounded-lg object-cover"
+                          loading="lazy"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex items-start justify-between gap-2">
+                            <h3 className="truncate text-base font-bold">{event.title}</h3>
+                            {registered && (
+                              <Badge className="shrink-0 gap-1 bg-emerald-500 hover:bg-emerald-500">
+                                <CheckCircle2 className="h-3 w-3" /> Going
+                              </Badge>
+                            )}
+                          </div>
+                          <Badge variant="outline" className="mb-2">{event.type}</Badge>
+                          <p className="mb-3 line-clamp-2 text-sm text-muted-foreground">{event.description}</p>
+                          <div className="mb-3 space-y-1 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              {new Date(event.date).toLocaleDateString()} · {event.time}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4" />
+                              {event.location}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4" />
+                              {event.attendees} attending
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="w-full"
+                            variant={registered ? 'outline' : 'default'}
+                            onClick={() => handleRegister(event)}
+                            disabled={registered}
+                          >
+                            {registered ? 'Registered' : 'Register'}
+                          </Button>
                         </div>
-                        {event.registered && (
-                          <Badge variant="default" className="gap-1">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Registered
-                          </Badge>
-                        )}
                       </div>
-                      
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{event.description}</p>
-                      
-                      <div className="space-y-1 text-sm text-muted-foreground mb-3">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          <span>{new Date(event.date).toLocaleDateString()} at {event.time}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
-                          <span>{event.location}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          <span>{event.attendees} attendees</span>
-                        </div>
-                      </div>
-                      
-                      <Button 
-                        size="sm" 
-                        onClick={() => registerForEvent(event)}
-                        disabled={event.registered}
-                        className="w-full"
-                      >
-                        {event.registered ? 'Already Registered' : 'Register Now'}
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </Card>
         </TabsContent>
 
-        {/* Services Tab */}
+        {/* Services */}
         <TabsContent value="services">
           <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Campus Services</h2>
-              <Button className="gap-2">
-                <Phone className="h-4 w-4" />
-                Emergency Contact
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {services.map((service) => {
+            <h2 className="mb-6">Campus Services</h2>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredServices.map((service) => {
                 const Icon = service.icon;
                 return (
                   <Card key={service.id} className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <Icon className="h-8 w-8 text-primary" />
-                        <div>
-                          <h3 className="font-bold">{service.name}</h3>
-                          <Badge variant="outline" className="text-xs">{service.category}</Badge>
-                        </div>
+                    <div className="mb-3 flex items-center gap-3">
+                      <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <h3 className="text-base font-bold">{service.name}</h3>
+                        <Badge variant="outline" className="text-xs">{service.category}</Badge>
                       </div>
-                      <Badge variant={service.status === 'Available' ? 'default' : 'destructive'}>
-                        {service.status}
-                      </Badge>
                     </div>
-                    
-                    <p className="text-sm text-muted-foreground mb-3">{service.description}</p>
-                    
-                    <div className="space-y-2 text-sm mb-4">
+                    <p className="mb-3 text-sm text-muted-foreground">{service.description}</p>
+                    <div className="mb-4 space-y-1.5 text-sm">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span>{service.location}</span>
+                        {service.location}
                       </div>
                       <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span>{service.contact}</span>
+                        {service.contact}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Star className="h-4 w-4 text-yellow-400" />
-                        <span>{service.rating}/5.0</span>
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                        {service.rating.toFixed(1)} / 5.0
                       </div>
                     </div>
-                    
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
+                      variant="outline"
                       className="w-full"
-                      onClick={() => contactService(service)}
+                      onClick={() => toast.success(`Opening ${service.name}…`)}
                     >
-                      Contact Service
+                      Contact
                     </Button>
                   </Card>
                 );
@@ -482,61 +309,70 @@ export default function Campus() {
           </Card>
         </TabsContent>
 
-        {/* Facilities Tab */}
+        {/* Facilities */}
         <TabsContent value="facilities">
           <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Smart Facility Booking</h2>
-              <Badge variant="outline">{facilityBookings.length} Active Bookings</Badge>
+            <div className="mb-6 flex items-center justify-between">
+              <h2>Facility Booking</h2>
+              <Badge variant="outline">{bookings.length} of your bookings</Badge>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {facilities.map((facility) => (
-                <Card key={facility.id} className="p-4 hover:shadow-card transition-smooth">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="font-bold">{facility.name}</h3>
-                      <div className="text-xs text-muted-foreground">{facility.building}, {facility.floor}</div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredFacilities.map((facility) => (
+                <Card key={facility.id} className="flex flex-col p-4">
+                  <div className="mb-3 flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-base font-bold">{facility.name}</h3>
+                      <p className="text-xs text-muted-foreground">
+                        {facility.building} · {facility.floor}
+                      </p>
                     </div>
-                    <Badge variant="outline">Capacity: {facility.capacity}</Badge>
+                    <Badge variant="outline" className="shrink-0">Cap. {facility.capacity}</Badge>
                   </div>
-
-                  <div className="space-y-2 text-sm mb-4 text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>{facility.hours}</span>
-                    </div>
-                  </div>
-
+                  <p className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4" /> {facility.hours}
+                  </p>
                   <div className="mb-4 flex flex-wrap gap-1">
-                    {facility.equipment.slice(0,3).map(eq => (
-                      <Badge key={eq} variant="outline" className="text-xs">{eq}</Badge>
+                    {facility.equipment.slice(0, 3).map((eq) => (
+                      <Badge key={eq} variant="secondary" className="text-xs font-normal">{eq}</Badge>
                     ))}
                     {facility.equipment.length > 3 && (
-                      <Badge variant="outline" className="text-xs">+{facility.equipment.length - 3} more</Badge>
+                      <Badge variant="secondary" className="text-xs font-normal">
+                        +{facility.equipment.length - 3}
+                      </Badge>
                     )}
                   </div>
-
-                  <FacilityBookingDialog
-                    facility={facility}
-                    onBookingSubmit={handleFacilityBooking}
-                  />
+                  <div className="mt-auto">
+                    <FacilityBookingDialog facility={facility} onBookingSubmit={handleFacilityBooking} />
+                  </div>
                 </Card>
               ))}
             </div>
 
-            {facilityBookings.length > 0 && (
+            {bookings.length > 0 && (
               <div className="mt-8">
-                <h3 className="text-lg font-semibold mb-3">Recent Bookings</h3>
+                <h3 className="mb-3 text-lg font-semibold">Your bookings</h3>
                 <div className="space-y-2">
-                  {facilityBookings.slice(0,5).map(b => (
-                    <Card key={b.id} className="p-3 text-sm flex items-center justify-between">
+                  {bookings.slice(0, 6).map((b) => (
+                    <Card key={b.id} className="flex items-center justify-between p-3 text-sm">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium">{b.facilityName}</span>
                         <Badge variant="outline" className="capitalize">{b.eventType}</Badge>
+                        <Badge
+                          className={
+                            b.status === 'confirmed'
+                              ? 'bg-emerald-500 hover:bg-emerald-500'
+                              : b.status === 'cancelled'
+                                ? 'bg-destructive hover:bg-destructive'
+                                : 'bg-amber-500 hover:bg-amber-500'
+                          }
+                        >
+                          {b.status}
+                        </Badge>
                       </div>
-                      <div className="text-muted-foreground">{b.date} • {b.startTime}-{b.endTime}</div>
+                      <span className="text-muted-foreground">
+                        {b.date} · {b.startTime}–{b.endTime}
+                      </span>
                     </Card>
                   ))}
                 </div>
@@ -545,68 +381,62 @@ export default function Campus() {
           </Card>
         </TabsContent>
 
-        {/* Announcements Tab */}
+        {/* Announcements */}
         <TabsContent value="announcements">
           <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Campus Announcements</h2>
-              <Button className="gap-2">
-                <Info className="h-4 w-4" />
-                All Announcements
-              </Button>
-            </div>
-            
+            <h2 className="mb-6">Campus Announcements</h2>
             <div className="space-y-4">
-              {announcements.map((announcement) => (
-                <Card 
-                  key={announcement.id} 
-                  className={`p-4 hover:shadow-card transition-smooth ${
-                    !announcement.read ? 'border-primary/50 bg-primary/5' : ''
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-bold">{announcement.title}</h3>
-                        <Badge variant="outline">{announcement.category}</Badge>
-                        <Badge variant={
-                          announcement.priority === 'high' ? 'destructive' : 
-                          announcement.priority === 'medium' ? 'secondary' : 'outline'
-                        }>
-                          {announcement.priority}
-                        </Badge>
-                        {!announcement.read && (
-                          <Badge variant="default" className="gap-1">
-                            <Info className="h-3 w-3" />
-                            New
+              {ANNOUNCEMENTS.map((a) => {
+                const isRead = readAnnouncements.has(a.id);
+                return (
+                  <Card
+                    key={a.id}
+                    className={`p-4 transition-smooth ${!isRead ? 'border-primary/40 bg-primary/5' : ''}`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <h3 className="text-base font-bold">{a.title}</h3>
+                          <Badge variant="outline">{a.category}</Badge>
+                          <Badge
+                            variant={
+                              a.priority === 'high'
+                                ? 'destructive'
+                                : a.priority === 'medium'
+                                  ? 'secondary'
+                                  : 'outline'
+                            }
+                          >
+                            {a.priority}
                           </Badge>
-                        )}
+                        </div>
+                        <p className="mb-2 text-sm text-muted-foreground">{a.description}</p>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          {new Date(a.date).toLocaleDateString()}
+                        </div>
                       </div>
-                      
-                      <p className="text-sm text-muted-foreground mb-2">{announcement.description}</p>
-                      
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>{new Date(announcement.date).toLocaleDateString()}</span>
-                      </div>
+                      {!isRead && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setReadAnnouncements((prev) => new Set(prev).add(a.id))}
+                        >
+                          Mark read
+                        </Button>
+                      )}
                     </div>
-                    
-                    {!announcement.read && (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => markAsRead(announcement)}
-                      >
-                        Mark as Read
-                      </Button>
-                    )}
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
   );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return <p className="py-12 text-center text-muted-foreground">{message}</p>;
 }

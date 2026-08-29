@@ -46,9 +46,11 @@ export function lookupInviteCode(code: string): InvitationCode | null {
   return getCodes().find(c => c.code.toUpperCase() === normalized) || null;
 }
 
+export type InviteFailureReason = 'invalid_format' | 'not_found' | 'already_used' | 'wrong_role';
+
 export type InviteValidationResult =
-  | { valid: true; entry: InvitationCode }
-  | { valid: false; reason: 'invalid_format' | 'not_found' | 'already_used' | 'wrong_role' };
+  | { valid: true; entry: InvitationCode; reason?: undefined }
+  | { valid: false; entry?: undefined; reason: InviteFailureReason };
 
 export function validateInviteCodeDetailed(code: string, role: InviteRole): InviteValidationResult {
   const normalized = code.trim().toUpperCase();
@@ -82,6 +84,7 @@ export function validateInviteCode(code: string, role: InviteRole): boolean {
 }
 
 export function getInviteCodeErrorMessage(result: InviteValidationResult): string {
+  if (result.valid) return '';
   switch (result.reason) {
     case 'invalid_format':
       return 'Invalid invitation code format. Codes must be issued by an administrator (e.g. PROF-A1B2).';

@@ -8,49 +8,49 @@ All colors MUST be HSL.
 
 @layer base {
 
-  /* Classic Theme - Navy Blue & White */
+  /* Classic Theme - Indigo & Slate */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 221 39% 11%;
+    --background: 210 40% 99%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 221 39% 11%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 221 39% 11%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 221 83% 53%;
+    --primary: 234 76% 57%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 221 83% 63%;
+    --primary-glow: 234 82% 68%;
 
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 221 39% 11%;
+    --secondary: 214 32% 95%;
+    --secondary-foreground: 222 47% 20%;
 
-    --muted: 214 32% 91%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 214 32% 95%;
+    --muted-foreground: 215 16% 42%;
 
-    --accent: 221 83% 53%;
+    --accent: 234 76% 57%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
+    --border: 214 26% 90%;
+    --input: 214 26% 90%;
+    --ring: 234 76% 57%;
 
-    --success: 142 71% 45%;
+    --success: 142 66% 40%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 33 92% 48%;
     --warning-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --radius: 0.7rem;
 
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
-    --shadow-elegant: 0 10px 30px -10px hsl(221 83% 53% / 0.3);
-    --shadow-card: 0 2px 8px hsl(221 83% 53% / 0.1);
+    --shadow-elegant: 0 18px 40px -16px hsl(234 76% 57% / 0.28);
+    --shadow-card: 0 1px 2px hsl(222 47% 11% / 0.06), 0 8px 24px -12px hsl(222 47% 11% / 0.12);
   }
 
   /* Cyber Theme - Cyan & Teal Gradients */
@@ -103,10 +103,17 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
-    @apply bg-background text-foreground font-mono;
-    font-size: 17px;
+    @apply bg-background text-foreground font-sans;
+    font-size: 16px;
     line-height: 1.6;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
   h1,
@@ -115,19 +122,44 @@ All colors MUST be HSL.
   h4,
   h5,
   h6 {
-    @apply font-bold;
+    @apply font-display font-bold tracking-tight;
+    text-wrap: balance;
   }
 
   h1 {
-    font-size: 2.2rem;
+    @apply text-4xl lg:text-5xl;
+    letter-spacing: -0.02em;
   }
 
   h2 {
-    font-size: 1.8rem;
+    @apply text-2xl lg:text-3xl;
   }
 
   h3 {
-    font-size: 1.5rem;
+    @apply text-xl;
+  }
+
+  ::selection {
+    @apply bg-primary/20;
+  }
+
+  /* Refined scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.28);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.45);
   }
 }
 
@@ -161,6 +193,14 @@ All colors MUST be HSL.
   }
 
   .card-hover {
-    @apply transition-smooth hover:shadow-glow hover:-translate-y-1;
+    @apply transition-smooth hover:-translate-y-0.5 hover:shadow-elegant hover:border-primary/30;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-br from-primary to-primary-glow bg-clip-text text-transparent;
+  }
+
+  .surface {
+    @apply rounded-xl border bg-card shadow-card;
   }
 }

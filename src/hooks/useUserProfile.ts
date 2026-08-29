@@ -57,9 +57,12 @@ export const useUserProfile = () => {
                 return;
             }
 
-            try {
-                setIsLoading(true);
+            // Show the app immediately with the local profile, then reconcile
+            // with the backend in the background if it is reachable.
+            setProfile((prev) => prev ?? profileFromAuth(user));
+            setIsLoading(false);
 
+            try {
                 const response: any = await api.get('/profiles/me');
 
                 const userProfile: UserProfile = {

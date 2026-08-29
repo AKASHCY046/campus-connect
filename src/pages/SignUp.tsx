@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,13 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import { GraduationCap, Loader2 } from 'lucide-react';
 import { UserRole } from '@/hooks/useUserProfile';
 import { InviteRole } from '@/lib/invitationCodes';
 
 const STAFF_ROLES: InviteRole[] = ['Professor', 'Librarian', 'Canteen Staff'];
 
 export default function SignUpPage() {
-  const { theme } = useTheme();
   const navigate = useNavigate();
   const { signUp } = useAuth();
   const [hasInviteCode, setHasInviteCode] = useState(false);
@@ -58,23 +57,22 @@ export default function SignUpPage() {
       else if (role === 'Librarian') navigate('/librarian');
       else if (role === 'Canteen Staff') navigate('/canteen-incharge');
       else navigate('/dashboard');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create account');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create account');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-elegant border-primary/20">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className={`text-3xl font-bold ${theme === 'cyber' ? 'gradient-cyber bg-clip-text text-transparent' : ''}`}>
-            Join CampusHub
-          </CardTitle>
-          <CardDescription>
-            Create your account to access campus services
-          </CardDescription>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-background p-4">
+      <Card className="w-full max-w-md border-primary/15 shadow-elegant animate-fade-in-up">
+        <CardHeader className="space-y-2 text-center">
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-primary text-primary-foreground">
+            <GraduationCap className="h-6 w-6" />
+          </div>
+          <CardTitle className="text-2xl">Create your account</CardTitle>
+          <CardDescription>Join Campus Connect to access every campus service</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
@@ -148,7 +146,7 @@ export default function SignUpPage() {
                   <Label htmlFor="inviteCode">Invitation Code</Label>
                   <Input
                     id="inviteCode"
-                    placeholder="e.g. PROF-2024"
+                    placeholder="e.g. PROF-A1B2"
                     value={formData.inviteCode}
                     onChange={(e) => setFormData({ ...formData, inviteCode: e.target.value })}
                     required
@@ -168,14 +166,14 @@ export default function SignUpPage() {
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Creating Account...' : 'Sign Up'}
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create account'}
             </Button>
-            <div className="text-sm text-center text-muted-foreground">
+            <p className="text-center text-sm text-muted-foreground">
               Already have an account?{' '}
-              <Link to="/sign-in" className="text-primary hover:underline font-medium">
-                Sign In
+              <Link to="/sign-in" className="font-medium text-primary hover:underline">
+                Sign in
               </Link>
-            </div>
+            </p>
           </CardFooter>
         </form>
       </Card>

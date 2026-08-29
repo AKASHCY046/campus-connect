@@ -18,9 +18,12 @@ import { Link } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
-import { supabase, TABLES } from '@/lib/supabase';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { queryKeys } from '@/lib/query-utils';
+import { getIssuedBooks } from '@/lib/services/library';
+import { getAssignments } from '@/lib/services/academic';
+import { getEvents } from '@/lib/services/events';
+import { getOrders } from '@/lib/services/canteen';
+import { getNotifications } from '@/lib/services/notifications';
 
 export default function Dashboard() {
   const { theme } = useTheme();
@@ -30,60 +33,57 @@ export default function Dashboard() {
   const username = profile?.full_name || user?.full_name || 'Student';
 
   // Fetch Stats
-  const { data: statsData, isLoading: isLoadingStats } = useQuery({
-    queryKey: ['dashboard-stats', user?.id], // Keep local for composite stats
+  const { data: statsData } = useQuery({
+    queryKey: ['dashboard-stats', user?.id],
     queryFn: async () => {
-      const [books, assignments, events] = await Promise.all([
-        supabase.from(TABLES.ISSUED_BOOKS).select('id', { count: 'exact' }).eq('user_id', user?.id).is('actual_return_date', null),
-        supabase.from(TABLES.ASSIGNMENTS).select('id', { count: 'exact' }),
-        supabase.from(TABLES.CAMPUS_EVENTS).select('id', { count: 'exact' }).gt('date', new Date().toISOString())
+      const [issued, assignments, events] = await Promise.all([
+        getIssuedBooks(user!.id),
+        getAssignments(),
+        getEvents(),
       ]);
-
+      const now = Date.now();
       return {
-        books: books.count || 0,
-        assignments: assignments.count || 0,
-        events: events.count || 0,
-        points: profile?.reward_points || 0
+        books: issued.filter((b: any) => b.status === 'issued' || b.status === 'overdue').length,
+        assignments: assignments.length,
+        events: events.filter((e: any) => new Date(e.date).getTime() >= now).length,
+        points: profile?.reward_points || 0,
       };
     },
-    enabled: !!user?.id && !!profile
+    enabled: !!user?.id && !!profile,
   });
 
-  // Fetch Recent Activity (Combining multiple sources)
+  // Fetch Recent Activity (combining multiple local sources)
   const { data: activities = [], isLoading: isLoadingActivity } = useQuery({
-    queryKey: ['dashboard-activity', user?.id], // Keep local for composite activity
+    queryKey: ['dashboard-activity', user?.id],
     queryFn: async () => {
-      const [books, orders, submissions] = await Promise.all([
-        supabase.from(TABLES.ISSUED_BOOKS).select('*, book:books(title)').eq('user_id', user?.id).order('issue_date', { ascending: false }).limit(2),
-        supabase.from(TABLES.ORDERS).select('*').eq('user_id', user?.id).order('created_at', { ascending: false }).limit(2),
-        supabase.from(TABLES.SUBMISSIONS).select('*, assignment:assignments(title)').eq('student_id', user?.id).order('submitted_at', { ascending: false }).limit(2)
+      const [issued, orders] = await Promise.all([
+        getIssuedBooks(user!.id),
+        getOrders(user!.id),
       ]);
-
-      const all = [
-        ...(books.data?.map(b => ({ action: `Issued "${b.book?.title}"`, time: b.issue_date, type: 'library' })) || []),
-        ...(orders.data?.map(o => ({ action: `Ordered Food (Token #${o.token_number})`, time: o.created_at, type: 'canteen' })) || []),
-        ...(submissions.data?.map(s => ({ action: `Submitted "${s.assignment?.title}"`, time: s.submitted_at, type: 'academic' })) || [])
-      ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 5);
-
-      return all;
+      return [
+        ...issued.map((b: any) => ({
+          action: `Issued "${b.book_title || b.title || 'a book'}"`,
+          time: b.issue_date || b.created_at,
+          type: 'library',
+        })),
+        ...orders.map((o: any) => ({
+          action: `Ordered food (Token #${o.token_number ?? '—'})`,
+          time: o.created_at,
+          type: 'canteen',
+        })),
+      ]
+        .filter((a) => a.time)
+        .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+        .slice(0, 5);
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
   });
 
   // Fetch Notifications
   const { data: notifications = [], isLoading: isLoadingNotifs } = useQuery({
-    queryKey: ['dashboard-notifications', user?.id], // Keep local
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from(TABLES.NOTIFICATIONS)
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
-        .limit(4);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id
+    queryKey: ['dashboard-notifications', user?.id],
+    queryFn: () => getNotifications(user!.id, 4),
+    enabled: !!user?.id,
   });
 
   const quickActions = [
@@ -101,13 +101,14 @@ export default function Dashboard() {
   ];
 
   const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    if (hours < 1) return 'Just now';
-    if (hours < 24) return `${hours} hours ago`;
-    return `${Math.floor(hours / 24)} days ago`;
+    const diff = Date.now() - new Date(dateString).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins} min ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days === 1 ? '' : 's'} ago`;
   };
 
   return (

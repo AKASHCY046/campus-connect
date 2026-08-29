@@ -139,6 +139,13 @@ export const menuApi = {
 
 // Orders API
 export const ordersApi = {
+  // Get all orders
+  getAll: (): Promise<Order[]> => {
+    return new Promise((resolve) => {
+      resolve(getFromStorage<Order[]>(ORDERS_KEY, []));
+    });
+  },
+
   // Get pending orders (for canteen in-charge)
   getPending: (): Promise<Order[]> => {
     return new Promise((resolve) => {
