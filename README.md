@@ -1,115 +1,104 @@
 # Campus Connect
 
-A comprehensive campus management system built with React, TypeScript, and modern web technologies.
+A campus management platform with role-based portals for students, faculty,
+librarians, canteen staff and administrators.
 
-## Features
+- **Frontend:** React 18 + TypeScript + Vite, shadcn/ui + Tailwind, TanStack Query
+- **Backend:** Spring Boot 3 + MySQL (see [`backend/`](backend/README.md))
+- **Auth (dev):** local credential store with five demo accounts. Clerk is the
+  intended production identity provider.
 
-- **Multi-Role Dashboard**: Student, Faculty, Librarian, and Canteen management interfaces
-- **Library Management**: Book catalog, issue/return system, QR code integration
-- **Canteen Pre-Ordering**: Digital menu, shopping cart, order tracking
-- **Academic Hub**: Study materials, assignments, study groups, forums
-- **Campus Services**: Events, facilities booking, announcements
-- **AI Chatbot**: Intelligent assistant for campus services and support
-- **Authentication**: Secure user authentication with Clerk
-- **Responsive Design**: Mobile-first approach with dual themes
+## Modules
 
-## Technologies Used
+| Module | Student | Staff |
+|---|---|---|
+| **Library** | Browse the catalogue, reserve books, track loans and fines | Approve requests, manage inventory, record returns, clear fines |
+| **Canteen** | Pre-order from the menu, pay from a wallet, track order status | Manage the menu, run the pre-order queue, view sales analytics |
+| **Academic** | Study materials, assignments, study groups and forums (join by code) | Publish materials, set assignments, manage groups and forums, view engagement |
+| **Campus** | Register for events, book facilities, read announcements | — |
+| **Admin** | — | Manage users and roles, issue staff invitation codes |
+| **Assistant** | Floating AI helper for every module (mock responses, or OpenAI when a key is set) | |
 
-- **Frontend**: React 18, TypeScript, Vite
-- **UI Framework**: shadcn/ui, Tailwind CSS
-- **Authentication**: Clerk
-- **State Management**: TanStack React Query, React Context
-- **Routing**: React Router DOM
-- **Icons**: Lucide React
-- **Notifications**: Sonner
+## Local-first data layer
 
-## Getting Started
+Every feature works with **no backend running**. Each service in
+`src/lib/services/` calls the Spring Boot API first and falls back to
+`localStorage` (seeded with demo content on first run) when the API is
+unavailable. `src/lib/apiClient.ts` adds a short request timeout and a circuit
+breaker so the fallback path stays fast.
 
-### Prerequisites
+## Getting started
 
-- Node.js (v18 or higher)
-- npm or yarn
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd campus-connect
-```
-
-2. Install dependencies:
 ```bash
 npm install
+npm run dev            # http://localhost:5173
 ```
 
-3. Set up environment variables:
-Create a `.env.local` file in the root directory:
+No environment file is required. To point the frontend at a running backend or
+enable the real assistant, create `.env`:
+
 ```env
-VITE_MONGODB_URI=your_mongodb_connection_string
-VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-VITE_OPENAI_API_KEY=your_openai_api_key_here
+VITE_API_BASE_URL="http://localhost:8080/api/v1"
+VITE_OPENAI_API_KEY=""      # optional — enables real AI assistant responses
+VITE_OPENAI_MODEL="gpt-4o-mini"
 ```
 
-4. Start the development server:
-```bash
-npm run dev
-```
+### Demo accounts
 
-The application will be available at `http://localhost:8080`
+| Role | Email | Password |
+|---|---|---|
+| Student | `student@campus.edu` | `student123` |
+| Professor | `faculty@campus.edu` | `faculty123` |
+| Librarian | `librarian@campus.edu` | `librarian123` |
+| Canteen staff | `canteen@campus.edu` | `canteen123` |
+| Admin | `admin@campus.edu` | `admin123` |
 
-## AI Chatbot
+The sign-in screen has one-click buttons for each. Staff sign-up needs an
+invitation code, which an admin generates from the Admin console.
 
-The application includes an intelligent AI chatbot that can help users with:
-- Library services and book management
-- Canteen pre-ordering system
-- Academic resources and study materials
-- Campus events and facilities
-- General campus information
+## Scripts
 
-### Chatbot Features
-- **Smart Responses**: Context-aware responses about campus services
-- **Dual Theme Support**: Integrates with both Classic and Cyber themes
-- **Real-time Chat**: Instant messaging interface with typing indicators
-- **Floating Interface**: Always accessible floating chat button
-- **Mock & Real AI**: Works with both mock responses and real OpenAI API
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Start the Vite dev server |
+| `npm run build` | Production build |
+| `npm run preview` | Preview the production build |
+| `npm run lint` | ESLint |
+| `npm test` | Run the Vitest suite |
+| `npm run test:watch` | Vitest in watch mode |
+| `npm run test:coverage` | Vitest with a coverage report |
 
-### Setup
-1. **Optional**: Add your OpenAI API key to `.env.local` for real AI responses
-2. **Default**: The chatbot works with intelligent mock responses without any API key
-3. **Access**: Click the chat button in the navigation or the floating chat button
-
-For detailed chatbot setup instructions, see [CHATBOT_SETUP.md](./CHATBOT_SETUP.md)
-
-## Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run build:dev` - Build for development
-- `npm run lint` - Run ESLint
-- `npm run preview` - Preview production build
-
-## Project Structure
+## Project structure
 
 ```
 src/
-├── components/          # Reusable UI components
-├── pages/              # Page components
-├── hooks/              # Custom React hooks
-├── contexts/           # React contexts
-├── lib/                # Utility functions
-└── ui/                 # shadcn/ui components
+├── components/       # shared components + shadcn/ui primitives + feature dialogs
+├── contexts/         # Auth, Theme, Chatbot providers
+├── hooks/            # useUserProfile, useRealtimeSync, …
+├── lib/
+│   ├── apiClient.ts  # backend client (timeout + circuit breaker)
+│   ├── services/     # per-module data layer (API → localStorage fallback)
+│   └── sample-data.ts# first-run demo content
+├── pages/            # one component per route
+└── test/             # Vitest setup + render helpers
+backend/              # Spring Boot API (optional)
 ```
 
-## Contributing
+## Testing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Commit your changes
-5. Push to the branch
-6. Create a Pull Request
+The Vitest suite covers the data-layer services, the auth store, the API client's
+circuit breaker, and key component flows (add-book validation, canteen ordering).
+Tests run against the localStorage fallback with `fetch` stubbed, so they need no
+backend.
+
+## The AI assistant
+
+The floating assistant (bottom-right on every signed-in page) answers questions
+about each module. Without `VITE_OPENAI_API_KEY` it uses keyword-matched mock
+responses driven by `src/lib/app_guide.json`; with a key it calls OpenAI with the
+same guide as context. Implementation: `src/lib/api/` and
+`src/components/Chatbot.tsx`.
 
 ## License
 
-This project is licensed under the MIT License.
+MIT
