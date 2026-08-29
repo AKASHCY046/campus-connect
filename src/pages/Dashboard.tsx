@@ -46,10 +46,9 @@ export default function Dashboard() {
         books: issued.filter((b: any) => b.status === 'issued' || b.status === 'overdue').length,
         assignments: assignments.length,
         events: events.filter((e: any) => new Date(e.date).getTime() >= now).length,
-        points: profile?.reward_points || 0,
       };
     },
-    enabled: !!user?.id && !!profile,
+    enabled: !!user?.id,
   });
 
   // Fetch Recent Activity (combining multiple local sources)
@@ -97,7 +96,7 @@ export default function Dashboard() {
     { label: 'Books Issued', value: statsData?.books || '0', icon: BookOpen },
     { label: 'Assignments', value: statsData?.assignments || '0', icon: GraduationCap },
     { label: 'Upcoming Events', value: statsData?.events || '0', icon: Calendar },
-    { label: 'Reward Points', value: statsData?.points?.toLocaleString() || '0', icon: Award },
+    { label: 'Reward Points', value: (profile?.reward_points ?? 0).toLocaleString(), icon: Award },
   ];
 
   const formatTime = (dateString: string) => {
