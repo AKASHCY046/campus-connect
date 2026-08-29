@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { menuApi, ordersApi, analyticsApi, MenuItem, Order, CreateMenuItemData, CreateOrderData } from '@/lib/api';
-import { useUser } from '@clerk/clerk-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Menu hooks
 export const useMenuItems = () => {
@@ -111,13 +111,13 @@ export const useOrders = () => {
 
 // User orders hook
 export const useUserOrders = () => {
-  const { user } = useUser();
+  const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const studentId = user?.id || 'anonymous';
-  const studentName = user?.fullName || user?.firstName || 'Student';
+  const studentName = user?.full_name || 'Student';
 
   const fetchUserOrders = useCallback(async () => {
     try {

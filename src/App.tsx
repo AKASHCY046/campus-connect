@@ -2,12 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ChatbotProvider } from "@/contexts/ChatbotContext";
 import { Navigation } from "@/components/Navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Chatbot } from "@/components/Chatbot";
 import ChatbotTest from "@/components/ChatbotTest";
 import Home from "./pages/Home";
@@ -49,12 +50,13 @@ const queryClient = new QueryClient({
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
+  const location = useLocation();
   useRealtimeSync(user?.id);
 
   return (
     <div className="min-h-screen">
       <Navigation />
-      {children}
+      <ErrorBoundary key={location.pathname}>{children}</ErrorBoundary>
       <Chatbot />
     </div>
   );

@@ -95,7 +95,10 @@ export default function Academic() {
 
   const isUserMember = (groupId: string) => userGroupIds.includes(groupId);
   const isForumMember = (forumId: string) => userForumIds.includes(forumId);
-  const canAccessResource = (resourceId: string) => userResourceIds.includes(resourceId) || hasResourceAccess(profile?.id || '', resourceId);
+  const canAccessResource = (material: { id: string; requires_code?: boolean }) =>
+    !material.requires_code ||
+    userResourceIds.includes(material.id) ||
+    hasResourceAccess(profile?.id || '', material.id);
 
   const downloadMaterial = (material: any) => {
     if (material.file_url?.startsWith('local://')) {
@@ -109,7 +112,15 @@ export default function Academic() {
       window.open(material.file_url, '_blank');
       toast.success(`Downloading ${material.title}`);
     } else {
-      toast.info('No file attached to this material.');
+      // Demo material with no uploaded file — generate a readable placeholder.
+      const body = `${material.title}\n${'='.repeat(material.title.length)}\n\nSubject: ${material.subject}\nCategory: ${material.category}\nShared by: ${material.uploaded_by_name || 'Faculty'}\n\n${material.description || ''}\n\n(This is placeholder content for the Campus Connect demo.)\n`;
+      const url = URL.createObjectURL(new Blob([body], { type: 'text/plain' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${material.title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Downloading ${material.title}`);
     }
   };
 
@@ -266,7 +277,7 @@ export default function Academic() {
                     )}
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-xs text-muted-foreground">By {material.uploaded_by_name || 'Faculty'}</span>
-                      {canAccessResource(material.id) ? (
+                      {canAccessResource(material) ? (
                         <Button size="sm" onClick={() => downloadMaterial(material)}>
                           <Download className="h-3 w-3 mr-1" /> Download
                         </Button>

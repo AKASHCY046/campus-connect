@@ -41,6 +41,18 @@ function mapLocalOrder(o: any, userId?: string): Order {
       quantity: o.qty,
       price: o.totalAmount / (o.qty || 1),
       created_at: o.createdAt,
+      menu_item: o.itemName
+        ? ({
+            id: o.itemId,
+            name: o.itemName,
+            price: o.totalAmount / (o.qty || 1),
+            category: 'snacks',
+            available: true,
+            veg: true,
+            created_at: o.createdAt || new Date().toISOString(),
+            updated_at: o.createdAt || new Date().toISOString(),
+          } as MenuItem)
+        : undefined,
     }],
     profiles: { full_name: o.studentName },
   };
@@ -295,7 +307,11 @@ export async function getOrderById(id: string) {
   return mapOrder(response);
 }
 
-export async function createOrder(userId: string, items: { menu_item_id: string; quantity: number }[]) {
+export async function createOrder(
+  userId: string,
+  items: { menu_item_id: string; quantity: number }[],
+  userName = 'Student',
+) {
   try {
     const payload = {
       items: items.map(item => ({
@@ -313,7 +329,7 @@ export async function createOrder(userId: string, items: { menu_item_id: string;
         itemId: item.menu_item_id,
         qty: item.quantity,
         studentId: userId,
-        studentName: 'Student',
+        studentName: userName,
       });
       createdOrders.push(mapLocalOrder(order, userId));
     }
