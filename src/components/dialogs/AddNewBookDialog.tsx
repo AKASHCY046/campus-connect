@@ -35,13 +35,17 @@ export const AddNewBookDialog: React.FC<AddNewBookDialogProps> = ({ onCreate }) 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+    const isbnDigits = formData.isbn.replace(/[\s-]/g, '');
     if (!formData.title.trim()) newErrors.title = 'Title is required';
     if (!formData.author.trim()) newErrors.author = 'Author is required';
-    if (!formData.isbn.trim()) newErrors.isbn = 'ISBN is required';
-    if (formData.isbn.length !== 10 && formData.isbn.length !== 13) {
-      newErrors.isbn = 'ISBN must be 10 or 13 digits';
+    if (!formData.isbn.trim()) {
+      newErrors.isbn = 'ISBN is required';
+    } else if (isbnDigits.length !== 10 && isbnDigits.length !== 13) {
+      newErrors.isbn = 'ISBN must have 10 or 13 digits';
     }
-    if (parseInt(formData.copies) < 1) newErrors.copies = 'Must be at least 1 copy';
+    if (parseInt(formData.copies) < 1 || Number.isNaN(parseInt(formData.copies))) {
+      newErrors.copies = 'Must be at least 1 copy';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -96,7 +100,7 @@ export const AddNewBookDialog: React.FC<AddNewBookDialogProps> = ({ onCreate }) 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="mt-4" variant="default">
+        <Button variant="default">
           <BookPlus className="h-4 w-4 mr-2" />
           Add New Book
         </Button>

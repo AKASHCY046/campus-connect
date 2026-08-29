@@ -68,6 +68,7 @@ export interface IssuedBook {
   created_at: string;
   updated_at: string;
   book?: Book;
+  profiles?: { full_name?: string | null };
 }
 
 export interface Fine {
@@ -79,6 +80,9 @@ export interface Fine {
   paid_at?: string;
   created_at: string;
   updated_at: string;
+  profiles?: { full_name?: string | null };
+  book?: { title?: string | null };
+  fine_amount?: number;
 }
 
 // Mapper helpers
