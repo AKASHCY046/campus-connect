@@ -1,5 +1,5 @@
 // OpenAI API integration for chat functionality
-import { config } from '@/lib/mongodb';
+import { config } from '@/lib/config';
 import appGuide from '@/lib/app_guide.json';
 
 export interface ChatMessage {
