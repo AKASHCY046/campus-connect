@@ -10,7 +10,6 @@ import { Navigation } from "@/components/Navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Chatbot } from "@/components/Chatbot";
-import ChatbotTest from "@/components/ChatbotTest";
 import Home from "./pages/Home";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -23,7 +22,6 @@ import NotFound from "./pages/NotFound";
 import LibrarianDashboard from "./pages/LibrarianDashboard";
 import CanteenDashboard from "./pages/CanteenDashboard";
 import FacultyDashboard from "./pages/FacultyDashboard";
-import CampusConnectApp from "./pages/CampusConnectApp";
 import Settings from "./pages/Settings";
 import Verification from "./pages/Verification";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -84,9 +82,7 @@ const App = () => (
                 <Route path="/academic" element={<ProtectedRoute><Layout><Academic /></Layout></ProtectedRoute>} />
                 <Route path="/campus" element={<ProtectedRoute><Layout><Campus /></Layout></ProtectedRoute>} />
                 <Route path="/faculty" element={<ProtectedRoute allowedRoles={['Professor', 'Admin']}><Layout><FacultyDashboard /></Layout></ProtectedRoute>} />
-                <Route path="/canteen-integrated" element={<ProtectedRoute><Layout><CampusConnectApp /></Layout></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
-                <Route path="/chatbot-test" element={<ProtectedRoute><Layout><ChatbotTest /></Layout></ProtectedRoute>} />
                 <Route path="/verify" element={<ProtectedRoute><Layout><Verification /></Layout></ProtectedRoute>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

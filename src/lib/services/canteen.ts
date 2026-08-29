@@ -28,7 +28,9 @@ function mapLocalOrder(o: any, userId?: string): Order {
   return {
     id: o.id,
     user_id: o.studentId || userId || '',
-    status: o.status === 'ready' ? 'ready' : o.status === 'picked' ? 'picked' : 'pending',
+    status: (['pending', 'preparing', 'ready', 'picked', 'cancelled'].includes(o.status)
+      ? o.status
+      : 'pending') as Order['status'],
     total_amount: o.totalAmount,
     token_number: parseInt(o.id?.slice(-4), 36) % 1000 || Math.floor(Math.random() * 900) + 100,
     payment_method: 'Wallet',
@@ -342,10 +344,7 @@ export async function updateOrderStatus(id: string, status: Order['status']) {
     const response = await api.put(`/orders/${id}/status?status=${mapOrderStatusToBackend(status)}`);
     return mapOrder(response);
   } catch {
-    if (status === 'picked' || status === 'ready') {
-      const order = await ordersApi.markPicked(id);
-      return mapLocalOrder(order);
-    }
-    throw new Error('Status update failed');
+    const order = await ordersApi.setStatus(id, status === 'preparing' ? 'preparing' : status);
+    return mapLocalOrder(order);
   }
 }

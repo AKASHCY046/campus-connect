@@ -13,12 +13,14 @@ export interface MenuItem {
   createdAt: string;
 }
 
+export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'picked' | 'cancelled';
+
 export interface Order {
   id: string;
   itemId: string;
   itemName: string;
   qty: number;
-  status: 'pending' | 'ready' | 'picked';
+  status: OrderStatus;
   studentId: string;
   studentName: string;
   totalAmount: number;
@@ -201,26 +203,29 @@ export const ordersApi = {
   },
 
   // Mark order as picked up
-  markPicked: (id: string): Promise<Order> => {
+  markPicked: (id: string): Promise<Order> => ordersApi.setStatus(id, 'picked'),
+
+  // Update an order to an arbitrary status
+  setStatus: (id: string, status: OrderStatus): Promise<Order> => {
     return new Promise((resolve, reject) => {
       const orders = getFromStorage<Order[]>(ORDERS_KEY, []);
       const index = orders.findIndex(order => order.id === id);
-      
+
       if (index === -1) {
         reject(new Error('Order not found'));
         return;
       }
-      
+
       orders[index] = {
         ...orders[index],
-        status: 'picked',
-        updatedAt: new Date().toISOString()
+        status,
+        updatedAt: new Date().toISOString(),
       };
-      
+
       saveToStorage(ORDERS_KEY, orders);
       resolve(orders[index]);
     });
-  }
+  },
 };
 
 // Analytics API
